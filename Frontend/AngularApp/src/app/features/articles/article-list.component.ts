@@ -147,6 +147,12 @@ export class ArticleListComponent implements OnInit {
           article.likeCount = result.likeCount;
           article.dislikeCount = result.dislikeCount;
         }
+      },
+      error: (err) => {
+        console.error('Vote error:', err);
+        if (err.status === 401) {
+          alert('برای رأی دادن لطفاً وارد شوید');
+        }
       }
     });
   }

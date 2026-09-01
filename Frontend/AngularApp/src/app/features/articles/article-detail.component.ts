@@ -56,7 +56,7 @@ import { ArticleDto } from '../../core/models/article.model';
             </div>
           </div>
         </div>
-        <div class="vote-message" *ngIf="voteMessage">{{ voteMessage }}</div>
+        <div class="vote-message" [class.error]="voteMessage.includes('لطفاً') || voteMessage.includes('خطا')" *ngIf="voteMessage">{{ voteMessage }}</div>
       </div>
     </div>
   `,
@@ -80,7 +80,8 @@ import { ArticleDto } from '../../core/models/article.model';
     .like-btn.active svg { fill: #ef4444; }
     .dislike-btn:hover, .dislike-btn.active { background: #fef9e7; border-color: #f59e0b; color: #f59e0b; }
     .dislike-btn.active svg { fill: #f59e0b; }
-    .vote-message { margin-top: 12px; font-size: 0.9rem; color: #10b981; }
+    .vote-message { margin-top: 12px; font-size: 0.9rem; color: #10b981; padding: 8px 16px; border-radius: 8px; background: rgba(16, 185, 129, 0.1); }
+    .vote-message.error { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
     .satisfaction-bar { display: flex; flex-direction: column; gap: 8px; margin-right: 24px; }
     .satisfaction-label { font-size: 0.95rem; color: var(--theme-text-secondary); }
     .satisfaction-label strong { color: var(--theme-primary); font-size: 1.1rem; }
@@ -144,18 +145,23 @@ export class ArticleDetailComponent implements OnInit {
         this.userVote = result.userVote ?? null;
 
         if (result.userVote === null) {
-          this.voteMessage = 'رای شما حذف شد';
+          this.voteMessage = 'رای شما حذف شد ✓';
         } else if (result.userVote === true) {
-          this.voteMessage = 'ممنون از پسندیدن شما!';
+          this.voteMessage = 'ممنون از پسندیدن شما! ✓';
         } else {
-          this.voteMessage = 'رای شما ثبت شد';
+          this.voteMessage = 'رای شما ثبت شد ✓';
         }
 
         setTimeout(() => this.voteMessage = '', 3000);
       },
-      error: () => {
-        this.voteMessage = 'برای رأی دادن لطفاً وارد شوید';
-        setTimeout(() => this.voteMessage = '', 3000);
+      error: (err) => {
+        console.error('Vote error:', err);
+        if (err.status === 401) {
+          this.voteMessage = 'برای رأی دادن لطفاً وارد شوید';
+        } else {
+          this.voteMessage = 'خطا در ثبت رأی';
+        }
+        setTimeout(() => this.voteMessage = '', 4000);
       }
     });
   }
