@@ -136,10 +136,15 @@ export class ArticleDetailComponent implements OnInit {
   }
 
   vote(isLike: boolean): void {
-    if (!this.article) return;
+    console.log('Vote called with:', isLike, 'Article ID:', this.article?.id);
+    if (!this.article) {
+      console.log('No article found');
+      return;
+    }
 
     this.articleService.vote(this.article.id, isLike).subscribe({
       next: (result) => {
+        console.log('Vote success:', result);
         this.likeCount = result.likeCount;
         this.dislikeCount = result.dislikeCount;
         this.userVote = result.userVote ?? null;
