@@ -15,7 +15,7 @@ import { ThemeService } from '../../core/services/theme.service';
         <div class="register-header">
           <img src="assets/logo.png" alt="شرکت طراحی و ساختمان نفت" class="register-logo">
           <h1>شرکت طراحی و ساختمان نفت</h1>
-          <p>سامانه آموزش و ارزیابی</p>
+          <p>سامانه هوش مصنوعی</p>
         </div>
         <form (ngSubmit)="onSubmit()" #registerForm="ngForm">
           <div class="form-row">
