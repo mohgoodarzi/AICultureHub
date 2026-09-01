@@ -79,7 +79,9 @@ import { ShamsiDate } from './core/utils/shamsi-date';
             <!-- Theme selector -->
             <div class="theme-selector">
               <select class="theme-dropdown" (change)="onThemeChange($event)" [value]="themeService.currentTheme.name">
-                <option *ngFor="let theme of themeService.themesList" [value]="theme.name">{{ theme.displayName }}</option>
+                <option *ngFor="let theme of themeService.themesList" [value]="theme.name">
+                  <span [style.background-color]="theme.colors.primary"></span> {{ theme.displayName }}
+                </option>
               </select>
             </div>
 
