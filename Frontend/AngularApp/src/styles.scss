@@ -283,3 +283,19 @@ select.form-control {
   background-position: left 12px center;
   padding-left: 34px;
 }
+
+.theme-dropdown {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--theme-border);
+  background: var(--theme-surface);
+  color: var(--theme-text);
+  font-size: 0.9rem;
+  cursor: pointer;
+  min-width: 140px;
+
+  option {
+    padding: 8px 12px;
+    font-weight: 500;
+  }
+}
