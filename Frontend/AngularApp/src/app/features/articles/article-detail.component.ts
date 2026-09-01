@@ -28,12 +28,12 @@ import { ArticleDto } from '../../core/models/article.model';
 
       <div class="vote-section">
         <div class="vote-container">
-          <button class="vote-btn like-btn" [class.active]="userVote === true" (click)="vote(true)" title="پسندیدن" #likeBtn>
+          <button class="vote-btn like-btn" [class.active]="userVote === true" (click)="testClick(true)" title="پسندیدن" #likeBtn>
             LIKE
             <span class="vote-count">{{ likeCount }}</span>
           </button>
 
-          <button class="vote-btn dislike-btn" [class.active]="userVote === false" (click)="vote(false)" title="نپسندیدن" #dislikeBtn>
+          <button class="vote-btn dislike-btn" [class.active]="userVote === false" (click)="testClick(false)" title="نپسندیدن" #dislikeBtn>
             DISLIKE
             <span class="vote-count">{{ dislikeCount }}</span>
           </button>
@@ -131,7 +131,13 @@ export class ArticleDetailComponent implements OnInit {
     });
   }
 
+  testClick(value: boolean): void {
+    console.log('TEST CLICK: ' + value);
+    alert('Button clicked! value=' + value);
+  }
+
   vote(isLike: boolean): void {
+    this.testClick(isLike);
     console.log('Vote called with:', isLike, 'Article ID:', this.article?.id);
     if (!this.article) {
       console.log('No article found');
