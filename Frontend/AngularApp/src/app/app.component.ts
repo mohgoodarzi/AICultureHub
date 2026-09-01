@@ -78,19 +78,11 @@ import { ShamsiDate } from './core/utils/shamsi-date';
           <div class="header-left">
             <!-- Theme selector -->
             <div class="theme-selector">
-              <span class="theme-label">تم:</span>
-              <div class="theme-options">
-                <button 
-                  *ngFor="let theme of themeService.themesList" 
-                  class="theme-btn" 
-                  [class.active]="themeService.currentTheme.name === theme.name"
-                  [style.background]="theme.colors.primary"
-                  [title]="theme.displayName"
-                  (click)="setTheme(theme.name)">
-                </button>
-              </div>
+              <select class="theme-dropdown" (change)="onThemeChange($event)" [value]="themeService.currentTheme.name">
+                <option *ngFor="let theme of themeService.themesList" [value]="theme.name">{{ theme.displayName }}</option>
+              </select>
             </div>
-            
+
             <!-- User info -->
             <div class="header-user" *ngIf="auth.user() as user">
               <div class="user-avatar">{{ user.firstName[0] }}{{ user.lastName[0] }}</div>
@@ -508,6 +500,11 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   setTheme(themeName: string) {
+    this.themeService.setTheme(themeName);
+  }
+
+  onThemeChange(event: any) {
+    const themeName = event.target.value;
     this.themeService.setTheme(themeName);
   }
 }
