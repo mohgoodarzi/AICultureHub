@@ -1,0 +1,64 @@
+# Build outputs
+**/dist/
+**/.angular/
+**/bin/
+**/obj/
+
+# Node modules
+**/node_modules/
+
+# IDE
+**/.vscode/
+**/.vs/
+**/.idea/
+
+# Logs
+*.log
+logs/
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Package files
+*.zip
+*.rar
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+
+# Database backups
+*.bak
+*.backup
+
+# Environment and secrets
+.env
+appsettings.*.json
+!appsettings.json
+
+# Build artifacts
+**/*.dll
+**/*.pdb
+**/*.mdb
+
+# Python files
+*.pyc
+__pycache__/
+
+# Batch files
+*.bat
+run*.bat
+
+# Extra files not part of main project
+DatabaseFix.sql
+sample_data_check.py
+seed-sample-data.ps1
+test_login.html
+verify_hash.cs
+
+# Extra images
+"png logo 4.png"
+"png logo odcc.png"
+"png logo2.png"
