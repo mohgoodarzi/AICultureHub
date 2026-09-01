@@ -166,7 +166,7 @@ export class ArticleDetailComponent implements OnInit {
         if (err.status === 401) {
           this.voteMessage = 'برای رأی دادن لطفاً وارد شوید';
         } else {
-          this.voteMessage = 'خطا در ثبت رأی';
+          this.voteMessage = 'خطا: وضعیت ' + err.status;
         }
         setTimeout(() => this.voteMessage = '', 4000);
       }

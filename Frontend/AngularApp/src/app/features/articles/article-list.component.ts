@@ -13,6 +13,7 @@ import { ShamsiDate } from '../../core/utils/shamsi-date';
   template: `
     <div class="page-container">
       <h1>📚 مقالات</h1>
+      <p style="background:yellow;padding:10px;">TEST BUTTON: <button (click)="testListClick()">CLICK ME</button></p>
 
       <div class="filters">
         <input type="text" [(ngModel)]="searchTerm" (input)="search()" placeholder="جستجوی مقالات..." class="search-input">
@@ -151,7 +152,9 @@ export class ArticleListComponent implements OnInit {
       error: (err) => {
         console.error('Vote error:', err);
         if (err.status === 401) {
-          alert('برای رأی دادن لطفاً وارد شوید');
+          alert('لطفاً وارد شوید (Please login)');
+        } else {
+          alert('خطا: وضعیت ' + err.status);
         }
       }
     });
@@ -175,5 +178,9 @@ export class ArticleListComponent implements OnInit {
   formatDate(date: string | undefined): string {
     if (!date) return '';
     return ShamsiDate.format(date, 'short');
+  }
+
+  testListClick(): void {
+    alert('TEST CLICK WORKS!');
   }
 }
