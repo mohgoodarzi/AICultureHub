@@ -27,7 +27,6 @@ import { ArticleDto } from '../../core/models/article.model';
       </div>
 
       <div class="vote-section">
-        <p>TEST: Click this button -> <button (click)="simpleAlert()">SIMPLE ALERT</button></p>
         <div class="vote-container">
           <button class="vote-btn like-btn" [class.active]="userVote === true" (click)="vote(true)" title="پسندیدن">
             LIKE
@@ -132,21 +131,11 @@ export class ArticleDetailComponent implements OnInit {
     });
   }
 
-  simpleAlert(): void {
-    alert('SIMPLE ALERT WORKS!');
-  }
-
   vote(isLike: boolean): void {
-    alert('vote called: ' + isLike);
-    console.log('Vote called with:', isLike, 'Article ID:', this.article?.id);
-    if (!this.article) {
-      console.log('No article found');
-      return;
-    }
+    if (!this.article) return;
 
     this.articleService.vote(this.article.id, isLike).subscribe({
       next: (result) => {
-        console.log('Vote success:', result);
         this.likeCount = result.likeCount;
         this.dislikeCount = result.dislikeCount;
         this.userVote = result.userVote ?? null;
