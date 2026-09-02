@@ -50,5 +50,10 @@ export const routes: Routes = [
     loadComponent: () => import('./features/admin/admin.component').then(m => m.AdminComponent),
     canActivate: [AuthGuard, AdminGuard]
   },
+  {
+    path: 'ai-policy',
+    loadComponent: () => import('./features/ai-policy/ai-policy.component').then(m => m.AiPolicyComponent),
+    canActivate: [AuthGuard]
+  },
   { path: '**', redirectTo: '/dashboard' }
 ];

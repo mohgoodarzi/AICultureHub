@@ -25,7 +25,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<CourseEnrollment> CourseEnrollments => Set<CourseEnrollment>();
     public DbSet<UserProgress> UserProgress => Set<UserProgress>();
     public DbSet<CourseFeedback> CourseFeedbacks => Set<CourseFeedback>();
-    public DbSet<ArticleFeedback> ArticleFeedbacks => Set<ArticleFeedback>();
+    public DbSet<ArticleFeedback> ArticleFeedback => Set<ArticleFeedback>();
     public DbSet<Quiz> Quizzes => Set<Quiz>();
     public DbSet<Question> Questions => Set<Question>();
     public DbSet<Answer> Answers => Set<Answer>();
@@ -284,6 +284,7 @@ public class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<ArticleFeedback>(entity =>
         {
+            entity.ToTable("ArticleFeedback");
             entity.HasOne(af => af.Article)
                   .WithMany()
                   .HasForeignKey(af => af.ArticleId)

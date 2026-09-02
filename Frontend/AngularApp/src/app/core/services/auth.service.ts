@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { LoginRequest, LoginResponse, RegisterRequest, UserDto } from '../models/auth.model';
 
@@ -20,7 +21,7 @@ export class AuthService {
   private permissionsSubject = new BehaviorSubject<UserPermissions | null>(null);
   public permissions$ = this.permissionsSubject.asObservable();
 
-  constructor(private http: HttpClient) {
+  constructor(private http: HttpClient, private router: Router) {
     this.loadUserFromStorage();
   }
 
@@ -67,6 +68,7 @@ export class AuthService {
     localStorage.removeItem('user');
     this.userSubject.next(null);
     this.permissionsSubject.next(null);
+    this.router.navigate(['/login']);
   }
 
   refreshUser(): void {

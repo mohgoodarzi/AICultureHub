@@ -15,6 +15,7 @@ public interface IArticleService
     Task<bool> RecordArticleViewAsync(int articleId, int userId);
     Task<VoteResult> VoteAsync(int articleId, bool isLike, int userId);
     Task<VoteResult> GetVoteResultAsync(int articleId, int? userId = null);
+    Task<List<FeedbackStatsDto>> GetFeedbackStatsAsync();
 }
 
 public interface ICategoryService

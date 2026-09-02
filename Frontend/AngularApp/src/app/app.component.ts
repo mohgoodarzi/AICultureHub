@@ -59,6 +59,12 @@ import { ShamsiDate } from './core/utils/shamsi-date';
               <span class="nav-label" *ngIf="isExpanded">مدیریت</span>
             </a>
           </li>
+          <li>
+            <a routerLink="/ai-policy" routerLinkActive="active" class="nav-item">
+              <span class="icon">📋</span>
+              <span class="nav-label" *ngIf="isExpanded">خط‌مشی AI</span>
+            </a>
+          </li>
         </ul>
       </nav>
       

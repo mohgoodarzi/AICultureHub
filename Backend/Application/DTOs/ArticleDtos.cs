@@ -40,6 +40,8 @@ public class ArticleListDto
     public DateTime? PublishedDate { get; set; }
     public string? Difficulty { get; set; }
     public int ViewCount { get; set; }
+    public int LikeCount { get; set; }
+    public int DislikeCount { get; set; }
     public bool IsPublished { get; set; }
     public bool IsFeatured { get; set; }
 }
@@ -81,6 +83,16 @@ public class VoteResult
     public int LikeCount { get; set; }
     public int DislikeCount { get; set; }
     public bool? UserVote { get; set; }
+}
+
+public class FeedbackStatsDto
+{
+    public string ArticleTitle { get; set; } = string.Empty;
+    public string CategoryName { get; set; } = string.Empty;
+    public int LikeCount { get; set; }
+    public int DislikeCount { get; set; }
+    public int TotalVotes => LikeCount + DislikeCount;
+    public int SatisfactionPercentage => TotalVotes > 0 ? (int)Math.Round((double)LikeCount / TotalVotes * 100) : 0;
 }
 
 public class CategoryDto

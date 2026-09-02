@@ -36,13 +36,33 @@ public class ArticlesController : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet("{slug}")]
-    public async Task<IActionResult> GetArticle(string slug)
+    [HttpGet("feedback-stats")]
+    public async Task<IActionResult> GetFeedbackStats()
     {
-        var userId = GetCurrentUserId();
-        var article = await _articleService.GetArticleBySlugAsync(slug, userId);
-        if (article == null) return NotFound();
-        return Ok(article);
+        var stats = await _articleService.GetFeedbackStatsAsync();
+        return Ok(stats);
+    }
+
+    [HttpGet("categories")]
+    public async Task<IActionResult> GetCategories()
+    {
+        var categories = await _categoryService.GetAllCategoriesAsync();
+        return Ok(categories);
+    }
+
+    [HttpGet("categories/{slug}")]
+    public async Task<IActionResult> GetCategoryBySlug(string slug)
+    {
+        var category = await _categoryService.GetCategoryBySlugAsync(slug);
+        if (category == null) return NotFound();
+        return Ok(category);
+    }
+
+    [HttpGet("tags")]
+    public async Task<IActionResult> GetTags()
+    {
+        var tags = await _tagService.GetAllTagsAsync();
+        return Ok(tags);
     }
 
     [HttpGet("by-id/{id}")]
@@ -50,6 +70,23 @@ public class ArticlesController : ControllerBase
     {
         var userId = GetCurrentUserId();
         var article = await _articleService.GetArticleByIdAsync(id, userId);
+        if (article == null) return NotFound();
+        return Ok(article);
+    }
+
+    [HttpGet("{id}/vote-status")]
+    public async Task<IActionResult> GetVoteStatus(int id)
+    {
+        var userId = GetCurrentUserId();
+        var result = await _articleService.GetVoteResultAsync(id, userId);
+        return Ok(result);
+    }
+
+    [HttpGet("{slug}")]
+    public async Task<IActionResult> GetArticle(string slug)
+    {
+        var userId = GetCurrentUserId();
+        var article = await _articleService.GetArticleBySlugAsync(slug, userId);
         if (article == null) return NotFound();
         return Ok(article);
     }
@@ -155,36 +192,6 @@ public class ArticlesController : ControllerBase
         if (userId == null) return Unauthorized();
         var result = await _articleService.VoteAsync(id, request.IsLike, userId.Value);
         return Ok(result);
-    }
-
-    [HttpGet("{id}/vote-status")]
-    public async Task<IActionResult> GetVoteStatus(int id)
-    {
-        var userId = GetCurrentUserId();
-        var result = await _articleService.GetVoteResultAsync(id, userId);
-        return Ok(result);
-    }
-
-    [HttpGet("categories")]
-    public async Task<IActionResult> GetCategories()
-    {
-        var categories = await _categoryService.GetAllCategoriesAsync();
-        return Ok(categories);
-    }
-
-    [HttpGet("categories/{slug}")]
-    public async Task<IActionResult> GetCategoryBySlug(string slug)
-    {
-        var category = await _categoryService.GetCategoryBySlugAsync(slug);
-        if (category == null) return NotFound();
-        return Ok(category);
-    }
-
-    [HttpGet("tags")]
-    public async Task<IActionResult> GetTags()
-    {
-        var tags = await _tagService.GetAllTagsAsync();
-        return Ok(tags);
     }
 
     private int? GetCurrentUserId()

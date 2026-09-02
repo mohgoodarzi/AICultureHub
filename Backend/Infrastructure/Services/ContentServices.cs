@@ -27,7 +27,7 @@ public class ArticleService : IArticleService
         if (categoryId.HasValue) query = query.Where(a => a.CategoryId == categoryId.Value);
         if (!string.IsNullOrEmpty(request.Search)) query = query.Where(a => a.Title.Contains(request.Search) || (a.Summary != null && a.Summary.Contains(request.Search)));
         var totalCount = await query.CountAsync();
-        var articles = await query.OrderByDescending(a => a.PublishedDate).Skip((request.PageNumber - 1) * request.PageSize).Take(request.PageSize).Select(a => new ArticleListDto { Id = a.Id, Title = a.Title, Slug = a.Slug, Summary = a.Summary, ImageUrl = a.ImageUrl, ReadingTimeMinutes = a.ReadingTimeMinutes, CategoryName = a.Category.Name, Category = new CategoryDto { Id = a.Category.Id, Name = a.Category.Name, Slug = a.Category.Slug }, AuthorName = a.Author.FullName, PublishedDate = a.PublishedDate, Difficulty = a.Difficulty, ViewCount = a.ViewCount, IsPublished = a.IsPublished, IsFeatured = a.IsFeatured }).ToListAsync();
+        var articles = await query.OrderByDescending(a => a.PublishedDate).Skip((request.PageNumber - 1) * request.PageSize).Take(request.PageSize).Select(a => new ArticleListDto { Id = a.Id, Title = a.Title, Slug = a.Slug, Summary = a.Summary, ImageUrl = a.ImageUrl, ReadingTimeMinutes = a.ReadingTimeMinutes, CategoryName = a.Category.Name, Category = new CategoryDto { Id = a.Category.Id, Name = a.Category.Name, Slug = a.Category.Slug }, AuthorName = a.Author.FullName, PublishedDate = a.PublishedDate, Difficulty = a.Difficulty, ViewCount = a.ViewCount, LikeCount = _context.ArticleFeedback.Count(af => af.ArticleId == a.Id && af.IsLike), DislikeCount = _context.ArticleFeedback.Count(af => af.ArticleId == a.Id && !af.IsLike), IsPublished = a.IsPublished, IsFeatured = a.IsFeatured }).ToListAsync();
         return new PaginatedResult<ArticleListDto> { Items = articles, TotalCount = totalCount, PageNumber = request.PageNumber, PageSize = request.PageSize };
     }
 
@@ -35,8 +35,10 @@ public class ArticleService : IArticleService
     {
         var article = await _context.Articles.Include(a => a.Category).Include(a => a.Author).Include(a => a.ArticleTags).ThenInclude(at => at.Tag).FirstOrDefaultAsync(a => a.Slug == slug && a.IsActive && a.IsPublished);
         if (article == null) return null;
-        var dto = MapToArticleDto(article);
-        if (userId.HasValue) { dto.IsBookmarked = await _context.Bookmarks.AnyAsync(b => b.UserId == userId.Value && b.ArticleId == article.Id); dto.IsRead = await _context.ArticleViews.AnyAsync(av => av.UserId == userId.Value && av.ArticleId == article.Id); }
+        var likeCount = await _context.ArticleFeedback.CountAsync(af => af.ArticleId == article.Id && af.IsLike);
+        var dislikeCount = await _context.ArticleFeedback.CountAsync(af => af.ArticleId == article.Id && !af.IsLike);
+        var dto = MapToArticleDto(article, likeCount: likeCount, dislikeCount: dislikeCount);
+        if (userId.HasValue) { dto.IsBookmarked = await _context.Bookmarks.AnyAsync(b => b.UserId == userId.Value && b.ArticleId == article.Id); dto.IsRead = await _context.ArticleViews.AnyAsync(av => av.UserId == userId.Value && av.ArticleId == article.Id); dto.UserVote = await _context.ArticleFeedback.Where(af => af.ArticleId == article.Id && af.UserId == userId.Value).Select(af => (bool?)af.IsLike).FirstOrDefaultAsync(); }
         return dto;
     }
 
@@ -44,8 +46,10 @@ public class ArticleService : IArticleService
     {
         var article = await _context.Articles.Include(a => a.Category).Include(a => a.Author).Include(a => a.ArticleTags).ThenInclude(at => at.Tag).FirstOrDefaultAsync(a => a.Id == id && a.IsActive);
         if (article == null) return null;
-        var dto = MapToArticleDto(article);
-        if (userId.HasValue) { dto.IsBookmarked = await _context.Bookmarks.AnyAsync(b => b.UserId == userId.Value && b.ArticleId == article.Id); dto.IsRead = await _context.ArticleViews.AnyAsync(av => av.UserId == userId.Value && av.ArticleId == article.Id); }
+        var likeCount = await _context.ArticleFeedback.CountAsync(af => af.ArticleId == article.Id && af.IsLike);
+        var dislikeCount = await _context.ArticleFeedback.CountAsync(af => af.ArticleId == article.Id && !af.IsLike);
+        var dto = MapToArticleDto(article, likeCount: likeCount, dislikeCount: dislikeCount);
+        if (userId.HasValue) { dto.IsBookmarked = await _context.Bookmarks.AnyAsync(b => b.UserId == userId.Value && b.ArticleId == article.Id); dto.IsRead = await _context.ArticleViews.AnyAsync(av => av.UserId == userId.Value && av.ArticleId == article.Id); dto.UserVote = await _context.ArticleFeedback.Where(af => af.ArticleId == article.Id && af.UserId == userId.Value).Select(af => (bool?)af.IsLike).FirstOrDefaultAsync(); }
         return dto;
     }
 
@@ -118,13 +122,13 @@ public class ArticleService : IArticleService
         var article = await _context.Articles.FindAsync(articleId);
         if (article == null) return new VoteResult { LikeCount = 0, DislikeCount = 0, UserVote = null };
 
-        var existingVote = await _context.ArticleFeedbacks.FirstOrDefaultAsync(af => af.ArticleId == articleId && af.UserId == userId);
+        var existingVote = await _context.ArticleFeedback.FirstOrDefaultAsync(af => af.ArticleId == articleId && af.UserId == userId);
 
         if (existingVote != null)
         {
             if (existingVote.IsLike == isLike)
             {
-                _context.ArticleFeedbacks.Remove(existingVote);
+                _context.ArticleFeedback.Remove(existingVote);
                 await _context.SaveChangesAsync();
                 var counts = await GetVoteCountsAsync(articleId);
                 return new VoteResult { LikeCount = counts.likeCount, DislikeCount = counts.dislikeCount, UserVote = null };
@@ -141,7 +145,7 @@ public class ArticleService : IArticleService
         else
         {
             var feedback = new ArticleFeedback { ArticleId = articleId, UserId = userId, IsLike = isLike, CreatedDate = DateTime.UtcNow };
-            _context.ArticleFeedbacks.Add(feedback);
+            _context.ArticleFeedback.Add(feedback);
             await _context.SaveChangesAsync();
             var counts = await GetVoteCountsAsync(articleId);
             return new VoteResult { LikeCount = counts.likeCount, DislikeCount = counts.dislikeCount, UserVote = isLike };
@@ -154,22 +158,39 @@ public class ArticleService : IArticleService
         bool? userVote = null;
         if (userId.HasValue)
         {
-            var vote = await _context.ArticleFeedbacks.FirstOrDefaultAsync(af => af.ArticleId == articleId && af.UserId == userId.Value);
+            var vote = await _context.ArticleFeedback.FirstOrDefaultAsync(af => af.ArticleId == articleId && af.UserId == userId.Value);
             userVote = vote?.IsLike;
         }
         return new VoteResult { LikeCount = counts.likeCount, DislikeCount = counts.dislikeCount, UserVote = userVote };
     }
 
+    public async Task<List<FeedbackStatsDto>> GetFeedbackStatsAsync()
+    {
+        var stats = await _context.Articles
+            .Include(a => a.Category)
+            .Where(a => a.IsActive && a.IsPublished)
+            .Select(a => new FeedbackStatsDto
+            {
+                ArticleTitle = a.Title,
+                CategoryName = a.Category != null ? a.Category.Name : "",
+                LikeCount = _context.ArticleFeedback.Count(af => af.ArticleId == a.Id && af.IsLike),
+                DislikeCount = _context.ArticleFeedback.Count(af => af.ArticleId == a.Id && !af.IsLike)
+            })
+            .ToListAsync();
+
+        return stats;
+    }
+
     private async Task<(int likeCount, int dislikeCount)> GetVoteCountsAsync(int articleId)
     {
-        var likeCount = await _context.ArticleFeedbacks.CountAsync(af => af.ArticleId == articleId && af.IsLike);
-        var dislikeCount = await _context.ArticleFeedbacks.CountAsync(af => af.ArticleId == articleId && !af.IsLike);
+        var likeCount = await _context.ArticleFeedback.CountAsync(af => af.ArticleId == articleId && af.IsLike);
+        var dislikeCount = await _context.ArticleFeedback.CountAsync(af => af.ArticleId == articleId && !af.IsLike);
         return (likeCount, dislikeCount);
     }
 
     private static string GenerateSlug(string title) => title.ToLowerInvariant().Replace(" ", "-").Replace("'", "").Replace("\"", "") + "-" + DateTime.UtcNow.Ticks.ToString()[10..];
 
-    private static ArticleDto MapToArticleDto(Article article, int? userId = null, int? likeCount = null, int? dislikeCount = null) => new ArticleDto { Id = article.Id, Title = article.Title, Slug = article.Slug, Summary = article.Summary, Content = article.Content, Category = new CategoryDto { Id = article.Category.Id, Name = article.Category.Name, Slug = article.Category.Slug, Description = article.Category.Description, Icon = article.Category.Icon, Color = article.Category.Color }, AuthorName = article.Author?.FullName, Author = article.Author != null ? new UserDto { Id = article.Author.Id, Username = article.Author.Username, FullName = article.Author.FullName, AvatarUrl = article.Author.AvatarUrl } : null, ImageUrl = article.ImageUrl, ReadingTimeMinutes = article.ReadingTimeMinutes, ViewCount = article.ViewCount, LikeCount = likeCount ?? article.LikeCount, DislikeCount = dislikeCount ?? 0, IsPublished = article.IsPublished, IsFeatured = article.IsFeatured, PublishedDate = article.PublishedDate, Difficulty = article.Difficulty, CreatedDate = article.CreatedDate, Tags = article.ArticleTags?.Select(at => new TagDto { Id = at.Tag.Id, Name = at.Tag.Name, Slug = at.Tag.Slug }).ToList() ?? new List<TagDto>(), UserVote = userId.HasValue ? null : null };
+    private static ArticleDto MapToArticleDto(Article article, int? userId = null, int? likeCount = null, int? dislikeCount = null) => new ArticleDto { Id = article.Id, Title = article.Title, Slug = article.Slug, Summary = article.Summary, Content = article.Content, Category = new CategoryDto { Id = article.Category.Id, Name = article.Category.Name, Slug = article.Category.Slug, Description = article.Category.Description, Icon = article.Category.Icon, Color = article.Category.Color }, AuthorName = article.Author?.FullName, Author = article.Author != null ? new UserDto { Id = article.Author.Id, Username = article.Author.Username, FullName = article.Author.FullName, AvatarUrl = article.Author.AvatarUrl } : null, ImageUrl = article.ImageUrl, ReadingTimeMinutes = article.ReadingTimeMinutes, ViewCount = article.ViewCount, LikeCount = likeCount ?? 0, DislikeCount = dislikeCount ?? 0, IsPublished = article.IsPublished, IsFeatured = article.IsFeatured, PublishedDate = article.PublishedDate, Difficulty = article.Difficulty, CreatedDate = article.CreatedDate, Tags = article.ArticleTags?.Select(at => new TagDto { Id = at.Tag.Id, Name = at.Tag.Name, Slug = at.Tag.Slug }).ToList() ?? new List<TagDto>(), UserVote = userId.HasValue ? null : null };
 }
 
 public class CategoryService : ICategoryService

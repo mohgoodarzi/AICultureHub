@@ -15,6 +15,7 @@ import { environment } from '../../../environments/environment';
       <div class="admin-tabs">
         <button [class.active]="activeTab === 'analytics'" (click)="activeTab = 'analytics'">آمار</button>
         <button [class.active]="activeTab === 'articles'" (click)="activeTab = 'articles'; loadArticles()">مقالات</button>
+        <button [class.active]="activeTab === 'feedback'" (click)="activeTab = 'feedback'; loadFeedbackStats()">بازخورد</button>
         <button [class.active]="activeTab === 'categories'" (click)="activeTab = 'categories'; loadAllCategories()">دسته‌بندی‌ها</button>
         <button [class.active]="activeTab === 'courses'" (click)="activeTab = 'courses'; loadCourses()">دوره‌ها</button>
         <button [class.active]="activeTab === 'users'" (click)="activeTab = 'users'">کاربران</button>
@@ -32,6 +33,69 @@ import { environment } from '../../../environments/environment';
           <div class="stat-card"><div class="stat-value">{{ analytics.quizAttempts }}</div><div class="stat-label">آزمون‌ها</div></div>
           <div class="stat-card"><div class="stat-value">{{ analytics.averageQuizScore | number:'1.0-0' }}%</div><div class="stat-label">میانگین نمره</div></div>
         </div>
+      </div>
+
+      <!-- Feedback Statistics Section -->
+      <div class="crud-section" *ngIf="activeTab === 'feedback'">
+        <div class="crud-header">
+          <h3>📊 آمار بازخورد مقالات</h3>
+        </div>
+
+        <div class="stats-grid" style="margin-bottom: 20px;">
+          <div class="stat-card">
+            <div class="stat-value">{{ totalLikes }}</div>
+            <div class="stat-label">مجموع لایک‌ها</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">{{ totalDislikes }}</div>
+            <div class="stat-label">مجموع دیسلایک‌ها</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">{{ totalVotes }}</div>
+            <div class="stat-label">مجموع آرا</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" [style.color]="overallSatisfaction >= 70 ? 'var(--theme-success)' : overallSatisfaction >= 40 ? 'var(--theme-warning)' : 'var(--theme-error)'">
+              {{ overallSatisfaction }}%
+            </div>
+            <div class="stat-label">رضایت کلی</div>
+          </div>
+        </div>
+
+        <table class="crud-table">
+          <thead>
+            <tr>
+              <th>مقاله</th>
+              <th>دسته‌بندی</th>
+              <th>لایک</th>
+              <th>دیسلایک</th>
+              <th>مجموع</th>
+              <th>رضایت</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of feedbackStats">
+              <td>{{ item.articleTitle }}</td>
+              <td>{{ item.categoryName }}</td>
+              <td><span style="color: #ef4444;">{{ item.likeCount }}</span></td>
+              <td><span style="color: #f59e0b;">{{ item.dislikeCount }}</span></td>
+              <td>{{ item.totalVotes }}</td>
+              <td>
+                <div class="satisfaction-cell">
+                  <div class="satisfaction-bar-mini">
+                    <div class="satisfaction-fill-mini" [style.width.%]="item.satisfactionPercentage"></div>
+                  </div>
+                  <span [style.color]="item.satisfactionPercentage >= 70 ? 'var(--theme-success)' : item.satisfactionPercentage >= 40 ? 'var(--theme-warning)' : 'var(--theme-error)'">
+                    {{ item.satisfactionPercentage }}%
+                  </span>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="feedbackStats.length === 0">
+              <td colspan="6" style="text-align: center; color: var(--theme-text-muted);">داده‌ای وجود ندارد</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       <!-- Categories Section -->
@@ -688,6 +752,12 @@ export class AdminComponent implements OnInit {
   roleForm: any = { name: '', description: '' };
   uploading = false;
 
+  feedbackStats: any[] = [];
+  totalLikes = 0;
+  totalDislikes = 0;
+  totalVotes = 0;
+  overallSatisfaction = 0;
+
   constructor(private http: HttpClient) {}
 
   ngOnInit(): void {
@@ -701,6 +771,19 @@ export class AdminComponent implements OnInit {
 
   loadAnalytics(): void {
     this.http.get<any>(`${this.apiUrl}/admin/analytics`).subscribe({ next: (data) => this.analytics = data });
+  }
+
+  loadFeedbackStats(): void {
+    this.http.get<any[]>(`${this.apiUrl}/articles/feedback-stats`).subscribe({
+      next: (data) => {
+        this.feedbackStats = data || [];
+        this.totalLikes = this.feedbackStats.reduce((sum, item) => sum + item.likeCount, 0);
+        this.totalDislikes = this.feedbackStats.reduce((sum, item) => sum + item.dislikeCount, 0);
+        this.totalVotes = this.totalLikes + this.totalDislikes;
+        this.overallSatisfaction = this.totalVotes > 0 ? Math.round((this.totalLikes / this.totalVotes) * 100) : 0;
+      },
+      error: (err) => console.error('Failed to load feedback stats:', err)
+    });
   }
 
   loadUsers(): void {
