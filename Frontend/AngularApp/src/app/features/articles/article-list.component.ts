@@ -12,10 +12,17 @@ import { ShamsiDate } from '../../core/utils/shamsi-date';
   imports: [CommonModule, RouterLink, FormsModule],
   template: `
     <div class="page-container">
-      <h1>📚 مقالات</h1>
+      <div class="page-hero animate-fade-up">
+        <span class="hero-chip">✦ دانش و بینش</span>
+        <h1>📚 مقالات</h1>
+        <p>آخرین بینش‌ها درباره هوش مصنوعی، یادگیری ماشین و تحول دیجیتال — نوشته‌شده برای همه سطوح سازمان.</p>
+      </div>
 
       <div class="filters">
-        <input type="text" [(ngModel)]="searchTerm" (input)="search()" placeholder="جستجوی مقالات..." class="search-input">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" [(ngModel)]="searchTerm" (input)="search()" placeholder="جستجوی مقالات..." class="search-input">
+        </div>
         <select [(ngModel)]="selectedCategory" (change)="filterByCategory()" class="category-select">
           <option value="">همه دسته‌بندی‌ها</option>
           <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
@@ -23,19 +30,21 @@ import { ShamsiDate } from '../../core/utils/shamsi-date';
       </div>
 
       <div class="articles-grid">
-        <div *ngFor="let article of articles" class="article-card-wrapper">
+        <div *ngFor="let article of articles" class="article-card-wrapper animate-pop">
           <a [routerLink]="['/articles', article.slug]" class="article-card">
             <div class="article-image" *ngIf="article.imageUrl" [style.background-image]="'url(' + article.imageUrl + ')'">
+              <div class="image-overlay"></div>
               <span class="category-badge">{{ article.category?.name }}</span>
             </div>
             <div class="article-content">
               <h3>{{ article.title }}</h3>
               <p class="summary">{{ article.summary }}</p>
               <div class="article-meta">
-                <span class="author">{{ article.authorName }}</span>
-                <span class="date">{{ formatDate(article.publishedDate) }}</span>
-                <span class="read-time">{{ article.readingTimeMinutes }} دقیقه</span>
+                <span class="author"><i>✍️</i> {{ article.authorName }}</span>
+                <span class="date"><i>🗓</i> {{ formatDate(article.publishedDate) }}</span>
+                <span class="read-time"><i>⏱</i> {{ article.readingTimeMinutes }} دقیقه</span>
               </div>
+              <span class="read-more">ادامه مطلب ←</span>
             </div>
           </a>
           <div class="article-voting-mini">
@@ -60,35 +69,191 @@ import { ShamsiDate } from '../../core/utils/shamsi-date';
   `,
   styles: [`
     .page-container { max-width: 1200px; }
-    h1 { color: var(--theme-text); margin-bottom: 24px; font-size: 1.8rem; }
-    .filters { display: flex; gap: 16px; margin-bottom: 24px; }
-    .search-input { flex: 1; padding: 12px 16px; border: 1.5px solid var(--theme-border); border-radius: 8px; font-size: 1rem; background: var(--theme-surface); color: var(--theme-text); }
-    .search-input:focus { outline: none; border-color: var(--theme-primary); }
-    .category-select { padding: 12px 16px; border: 1.5px solid var(--theme-border); border-radius: 8px; font-size: 1rem; min-width: 200px; background: var(--theme-surface); color: var(--theme-text); }
+
+    .filters { display: flex; gap: 14px; margin-bottom: 26px; align-items: center; }
+
+    .search-box {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .search-icon {
+      position: absolute;
+      right: 14px;
+      font-size: 0.95rem;
+      opacity: 0.6;
+      pointer-events: none;
+    }
+    .search-input {
+      width: 100%;
+      padding: 12px 42px 12px 16px;
+      border: 1.5px solid var(--theme-border);
+      border-radius: 12px;
+      font-size: 0.95rem;
+      background: var(--theme-surface);
+      color: var(--theme-text);
+      transition: all 0.25s var(--ease-smooth);
+      font-family: inherit;
+    }
+    .search-input:focus {
+      outline: none;
+      border-color: var(--theme-primary);
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--theme-primary) 12%, transparent);
+    }
+    .category-select {
+      padding: 12px 16px;
+      border: 1.5px solid var(--theme-border);
+      border-radius: 12px;
+      font-size: 0.92rem;
+      min-width: 210px;
+      background: var(--theme-surface);
+      color: var(--theme-text);
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+    .category-select:focus {
+      outline: none;
+      border-color: var(--theme-primary);
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--theme-primary) 12%, transparent);
+    }
+
     .articles-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 24px; }
-    .article-card-wrapper { display: flex; flex-direction: column; }
-    .article-card { background: var(--theme-surface); border-radius: 12px; overflow: hidden; box-shadow: var(--theme-card-shadow); border: 1px solid var(--theme-border); text-decoration: none; transition: all 0.3s ease; display: block; flex: 1; }
-    .article-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
-    .article-image { height: 160px; background-size: cover; background-position: center; position: relative; background-color: var(--theme-background); }
-    .category-badge { position: absolute; top: 12px; right: 12px; background: var(--theme-primary); color: white; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
-    .article-content { padding: 20px; }
-    .article-content h3 { margin: 0 0 8px 0; color: var(--theme-text); font-size: 1.1rem; }
-    .summary { color: var(--theme-text-secondary); font-size: 0.9rem; margin: 0 0 12px 0; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-    .article-meta { display: flex; gap: 12px; font-size: 0.8rem; color: var(--theme-text-muted); }
-    .article-meta span { display: flex; align-items: center; gap: 4px; }
-    .article-voting-mini { display: flex; gap: 8px; padding: 10px 0; justify-content: center; }
-    .vote-mini { display: flex; align-items: center; gap: 4px; padding: 6px 12px; border: 1px solid var(--theme-border); border-radius: 20px; background: var(--theme-surface); cursor: pointer; font-size: 0.8rem; color: var(--theme-text-muted); transition: all 0.2s ease; }
-    .vote-mini:hover { transform: scale(1.05); }
+
+    .article-card-wrapper { display: flex; flex-direction: column; gap: 10px; }
+
+    .article-card {
+      background: var(--theme-surface);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--theme-card-shadow);
+      border: 1px solid var(--theme-border);
+      text-decoration: none;
+      transition: all 0.35s var(--ease-smooth);
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      position: relative;
+    }
+    .article-card:hover {
+      transform: translateY(-6px);
+      box-shadow: var(--shadow-md);
+      border-color: color-mix(in srgb, var(--theme-primary) 30%, var(--theme-border));
+    }
+
+    .article-image {
+      height: 170px;
+      background-size: cover;
+      background-position: center;
+      position: relative;
+      background-color: var(--theme-background);
+      overflow: hidden;
+    }
+    .image-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 40%, rgba(15, 10, 40, 0.55));
+      opacity: 0.85;
+      transition: opacity 0.3s ease;
+    }
+    .article-card:hover .image-overlay { opacity: 1; }
+
+    .category-badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(8px);
+      color: var(--theme-primary-dark);
+      padding: 5px 13px;
+      border-radius: 100px;
+      font-size: 0.73rem;
+      font-weight: 800;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+    }
+
+    .article-content { padding: 20px 22px 22px; display: flex; flex-direction: column; flex: 1; }
+    .article-content h3 {
+      margin: 0 0 10px 0;
+      color: var(--theme-text);
+      font-size: 1.08rem;
+      font-weight: 800;
+      line-height: 1.6;
+    }
+    .summary {
+      color: var(--theme-text-secondary);
+      font-size: 0.88rem;
+      margin: 0 0 14px 0;
+      line-height: 1.8;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      flex: 1;
+    }
+
+    .article-meta {
+      display: flex;
+      gap: 14px;
+      font-size: 0.76rem;
+      color: var(--theme-text-muted);
+      flex-wrap: wrap;
+    }
+    .article-meta span { display: flex; align-items: center; gap: 4px; font-weight: 600; }
+    .article-meta i { font-style: normal; font-size: 0.85rem; }
+
+    .read-more {
+      margin-top: 14px;
+      color: var(--theme-primary);
+      font-weight: 800;
+      font-size: 0.84rem;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: all 0.3s ease;
+    }
+    .article-card:hover .read-more { opacity: 1; transform: translateY(0); }
+
+    .article-voting-mini { display: flex; gap: 8px; justify-content: flex-start; padding: 0 4px; }
+    .vote-mini {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border: 1.5px solid var(--theme-border);
+      border-radius: 100px;
+      background: var(--theme-surface);
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--theme-text-muted);
+      transition: all 0.25s var(--ease-spring);
+      font-family: inherit;
+    }
+    .vote-mini:hover { transform: scale(1.08) translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
     .vote-mini.like:hover, .vote-mini.like.active { background: #fef2f2; border-color: #ef4444; color: #ef4444; }
     .vote-mini.dislike:hover, .vote-mini.dislike.active { background: #fef9e7; border-color: #f59e0b; color: #f59e0b; }
-    .vote-mini svg { width: 16px; height: 16px; }
-    .pagination { display: flex; justify-content: center; align-items: center; gap: 16px; margin-top: 24px; }
-    .pagination button { padding: 10px 20px; background: var(--theme-primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-family: inherit; }
-    .pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
-    .pagination button:hover:not(:disabled) { opacity: 0.9; }
-    .pagination span { color: var(--theme-text-secondary); }
+    .vote-mini svg { width: 15px; height: 15px; }
+
+    .pagination { display: flex; justify-content: center; align-items: center; gap: 16px; margin-top: 28px; }
+    .pagination button {
+      padding: 10px 22px;
+      background: var(--gradient-brand);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 700;
+      font-family: inherit;
+      transition: all 0.25s ease;
+      box-shadow: 0 4px 14px color-mix(in srgb, var(--theme-primary) 25%, transparent);
+    }
+    .pagination button:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+    .pagination button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 20px color-mix(in srgb, var(--theme-primary) 32%, transparent); }
+    .pagination span { color: var(--theme-text-secondary); font-weight: 600; font-size: 0.9rem; }
+
     @media (max-width: 1024px) { .articles-grid { grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width: 768px) { .articles-grid { grid-template-columns: 1fr; } .filters { flex-direction: column; } }
+    @media (max-width: 768px) { .articles-grid { grid-template-columns: 1fr; } .filters { flex-direction: column; align-items: stretch; } }
   `]
 })
 export class ArticleListComponent implements OnInit {

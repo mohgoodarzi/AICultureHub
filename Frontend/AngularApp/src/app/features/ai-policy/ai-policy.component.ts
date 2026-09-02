@@ -9,6 +9,7 @@ import { CommonModule } from '@angular/common';
     <div class="ai-policy-page">
       <div class="policy-container">
         <div class="policy-header">
+          <span class="policy-chip">✦ چارچوب حاکمیت هوش مصنوعی</span>
           <img src="assets/logo.png" alt="شرکت طراحی و ساختمان نفت" class="header-logo">
           <h1>خلاصه ۱۲ خطی خط‌مشی هوش مصنوعی شرکت طراحی و ساختمان نفت</h1>
         </div>
@@ -123,49 +124,89 @@ import { CommonModule } from '@angular/common';
     .policy-container {
       max-width: 900px;
       margin: 0 auto;
-      background: linear-gradient(135deg, var(--theme-surface) 0%, var(--theme-background) 100%);
-      border-radius: 16px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+      background: var(--theme-surface);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
       border: 1px solid var(--theme-border);
       overflow: hidden;
+      animation: fadeUp 0.6s var(--ease-smooth) both;
     }
 
     .policy-header {
-      background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-primary-dark) 100%);
-      padding: 28px 40px;
+      position: relative;
+      padding: 40px 40px 34px;
       text-align: center;
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 16px;
+      color: #ffffff;
+      overflow: hidden;
+      background:
+        radial-gradient(800px 300px at 90% -20%, rgba(255,255,255,0.18), transparent 60%),
+        var(--gradient-brand);
+      background-size: 200% 200%;
+      animation: gradientShift 14s ease infinite;
+    }
+
+    .policy-header::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px);
+      background-size: 40px 40px;
+      mask-image: radial-gradient(600px 300px at 50% 30%, #000 30%, transparent 78%);
+      -webkit-mask-image: radial-gradient(600px 300px at 50% 30%, #000 30%, transparent 78%);
+      animation: gridDrift 12s linear infinite;
+      pointer-events: none;
+    }
+
+    .policy-chip {
+      position: relative;
+      display: inline-flex;
+      padding: 7px 18px;
+      border-radius: 100px;
+      background: rgba(255,255,255,0.16);
+      border: 1px solid rgba(255,255,255,0.3);
+      backdrop-filter: blur(8px);
+      font-size: 0.8rem;
+      font-weight: 700;
     }
 
     .header-logo {
-      width: 72px;
-      height: 72px;
+      width: 76px;
+      height: 76px;
       object-fit: contain;
       filter: brightness(0) invert(1);
       opacity: 0.95;
+      position: relative;
+      animation: floatY 6s ease-in-out infinite;
     }
 
     .policy-header h1 {
+      position: relative;
       margin: 0;
       color: #ffffff;
       font-size: 1.5rem;
-      font-weight: 700;
-      line-height: 1.6;
+      font-weight: 800;
+      line-height: 1.7;
+      letter-spacing: -0.02em;
     }
 
     .policy-content {
-      padding: 32px 40px;
+      padding: 30px 40px 36px;
     }
 
     .policy-item {
       display: flex;
       gap: 20px;
-      padding: 20px 0;
-      border-bottom: 1px solid var(--theme-border);
-      transition: all 0.3s ease;
+      padding: 22px 14px;
+      border-bottom: 1px dashed var(--theme-border);
+      border-radius: 14px;
+      transition: all 0.3s var(--ease-smooth);
+      position: relative;
     }
 
     .policy-item:last-child {
@@ -173,25 +214,28 @@ import { CommonModule } from '@angular/common';
     }
 
     .policy-item:hover {
-      background: var(--theme-surface-hover);
-      margin: 0 -20px;
-      padding: 20px;
-      border-radius: 12px;
+      background: color-mix(in srgb, var(--theme-primary) 4%, transparent);
+      transform: translateX(-5px);
     }
 
     .item-number {
       flex-shrink: 0;
-      width: 48px;
-      height: 48px;
-      background: linear-gradient(135deg, var(--theme-primary), var(--theme-primary-dark));
+      width: 52px;
+      height: 52px;
+      background: var(--gradient-brand);
       color: white;
-      border-radius: 50%;
+      border-radius: 16px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: 700;
+      font-weight: 900;
       font-size: 1.2rem;
-      box-shadow: 0 4px 12px rgba(var(--theme-primary-rgb), 0.3);
+      box-shadow: 0 8px 20px color-mix(in srgb, var(--theme-primary) 30%, transparent);
+      transition: all 0.3s var(--ease-spring);
+    }
+
+    .policy-item:hover .item-number {
+      transform: scale(1.1) rotate(-6deg);
     }
 
     .item-content {
@@ -201,24 +245,28 @@ import { CommonModule } from '@angular/common';
     .item-content h3 {
       margin: 0 0 8px 0;
       color: var(--theme-text);
-      font-size: 1.1rem;
-      font-weight: 600;
+      font-size: 1.08rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     .item-content p {
       margin: 0;
       color: var(--theme-text-secondary);
-      font-size: 0.95rem;
-      line-height: 1.8;
+      font-size: 0.94rem;
+      line-height: 2;
     }
 
     .item-content strong {
       color: var(--theme-primary);
+      font-weight: 800;
     }
 
     @media (max-width: 768px) {
       .policy-header {
-        padding: 20px 16px;
+        padding: 28px 16px;
       }
 
       .header-logo {
@@ -236,13 +284,14 @@ import { CommonModule } from '@angular/common';
 
       .policy-item {
         gap: 16px;
-        padding: 16px 0;
+        padding: 16px 8px;
       }
 
       .item-number {
         width: 40px;
         height: 40px;
         font-size: 1rem;
+        border-radius: 12px;
       }
 
       .item-content h3 {

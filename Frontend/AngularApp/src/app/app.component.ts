@@ -119,22 +119,41 @@ import { ShamsiDate } from './core/utils/shamsi-date';
     </ng-template>
   `,
   styles: [`
-    .app-container { 
-      display: flex; 
-      min-height: 100vh; 
-      background: var(--theme-background); 
+    .app-container {
+      display: flex;
+      min-height: 100vh;
+      background: var(--theme-background);
       position: relative;
+    }
+
+    /* Decorative ambient background blobs */
+    .app-container::before,
+    .app-container::after {
+      content: '';
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(90px);
+      opacity: 0.14;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .app-container::before {
+      width: 480px; height: 480px;
+      background: var(--theme-primary);
+      top: -160px; left: -120px;
+    }
+    .app-container::after {
+      width: 420px; height: 420px;
+      background: var(--theme-secondary);
+      bottom: -140px; right: 140px;
     }
 
     /* Overlay backdrop */
     .sidebar-backdrop {
       position: fixed;
-      top: 0;
-      right: 0;
-      bottom: 0;
-      left: 0;
-      background: rgba(0, 0, 0, 0.12);
-      backdrop-filter: blur(2px);
+      top: 0; right: 0; bottom: 0; left: 0;
+      background: rgba(10, 8, 30, 0.35);
+      backdrop-filter: blur(4px);
       opacity: 0;
       visibility: hidden;
       transition: all 0.3s ease;
@@ -146,57 +165,78 @@ import { ShamsiDate } from './core/utils/shamsi-date';
       visibility: visible;
     }
 
-    /* Sidebar drawer - fixed to right */
-    .sidebar-drawer { 
+    /* Sidebar drawer — dark glass panel */
+    .sidebar-drawer {
       position: fixed;
       top: 0;
       right: 0;
-      height: 100vh; 
-      width: 72px;
+      height: 100vh;
+      width: 74px;
       background: var(--theme-sidebar-bg);
-      color: var(--theme-sidebar-text); 
-      display: flex; 
-      flex-direction: column; 
+      color: var(--theme-sidebar-text);
+      display: flex;
+      flex-direction: column;
       z-index: 1001;
-      transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: width 0.4s var(--ease-smooth);
       overflow: hidden;
-      box-shadow: -4px 0 24px rgba(0, 0, 0, 0.06);
+      box-shadow: -8px 0 40px rgba(5, 2, 30, 0.35);
+    }
+
+    /* Animated edge light */
+    .sidebar-drawer::before {
+      content: '';
+      position: absolute;
+      top: 0; bottom: 0; right: 0;
+      width: 1px;
+      background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--theme-secondary) 70%, transparent), transparent);
+      opacity: 0.6;
     }
 
     .sidebar-drawer.expanded {
       width: 280px;
     }
 
-    .sidebar-header { 
-      padding: 20px 16px; 
-      border-bottom: 1px solid var(--theme-border); 
-      text-align: center; 
-      min-height: 100px;
+    .sidebar-header {
+      padding: 22px 16px;
+      text-align: center;
+      min-height: 104px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      position: relative;
     }
 
-    .company-logo { 
-      max-width: 100px; 
-      max-height: 60px; 
+    .sidebar-header::after {
+      content: '';
+      position: absolute;
+      bottom: 0; right: 18px; left: 18px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.14), transparent);
+    }
+
+    .company-logo {
+      max-width: 100px;
+      max-height: 60px;
       margin-bottom: 8px;
       transition: all 0.3s ease;
       object-fit: contain;
+      filter: drop-shadow(0 4px 14px rgba(0,0,0,0.4));
     }
 
     .company-logo-small {
-      width: 44px;
-      height: 44px;
+      width: 46px;
+      height: 46px;
       object-fit: contain;
       transition: all 0.3s ease;
+      filter: drop-shadow(0 4px 14px rgba(0,0,0,0.4));
+      border-radius: 12px;
     }
 
-    .company-name { 
-      font-size: 0.85rem; 
-      font-weight: 600; 
-      color: var(--theme-sidebar-text); 
+    .company-name {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--theme-sidebar-text);
       margin: 0;
       text-align: center;
       white-space: nowrap;
@@ -210,57 +250,74 @@ import { ShamsiDate } from './core/utils/shamsi-date';
       transform: translateY(0);
     }
 
-    .nav-menu { 
-      list-style: none; 
-      padding: 15px 0; 
-      margin: 0; 
-      flex: 1; 
+    .nav-menu {
+      list-style: none;
+      padding: 18px 10px;
+      margin: 0;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
     }
 
-    .nav-item { 
-      display: flex; 
-      align-items: center; 
-      gap: 14px; 
-      padding: 14px 16px; 
-      color: var(--theme-sidebar-text-muted); 
-      text-decoration: none; 
-      transition: all 0.2s ease;
-      border-right: 3px solid transparent;
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 13px 14px;
+      border-radius: 14px;
+      color: var(--theme-sidebar-text-muted);
+      text-decoration: none;
+      transition: all 0.25s var(--ease-smooth);
       position: relative;
       overflow: hidden;
     }
 
-    .nav-item:hover { 
-      background: var(--theme-surface-hover); 
-      color: var(--theme-sidebar-text); 
+    .nav-item::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, color-mix(in srgb, var(--theme-secondary) 22%, transparent), transparent 70%);
+      opacity: 0;
+      transition: opacity 0.25s ease;
     }
 
-    .nav-item.active { 
-      background: var(--theme-surface-hover); 
-      color: var(--theme-primary); 
-      border-right-color: var(--theme-primary);
+    .nav-item:hover {
+      color: var(--theme-sidebar-text);
+      background: rgba(255, 255, 255, 0.06);
+      transform: translateX(-3px);
     }
 
-    .nav-item .icon { 
-      font-size: 1.25rem; 
-      min-width: 40px;
+    .nav-item:hover::before { opacity: 1; }
+
+    .nav-item.active {
+      color: #ffffff;
+      background: linear-gradient(135deg, var(--theme-primary), color-mix(in srgb, var(--theme-secondary) 55%, var(--theme-primary)));
+      box-shadow: 0 8px 22px color-mix(in srgb, var(--theme-primary) 45%, transparent);
+    }
+
+    .nav-item.active::before { opacity: 0; }
+
+    .nav-item .icon {
+      font-size: 1.25rem;
+      min-width: 38px;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: transform 0.2s ease;
+      transition: transform 0.25s var(--ease-spring);
+      position: relative;
     }
 
-    .nav-item:hover .icon {
-      transform: scale(1.08);
-    }
+    .nav-item:hover .icon { transform: scale(1.15) rotate(-4deg); }
 
     .nav-label {
       white-space: nowrap;
       opacity: 0;
       transform: translateX(20px);
       transition: all 0.3s ease 0.05s;
-      font-weight: 500;
-      font-size: 0.95rem;
+      font-weight: 600;
+      font-size: 0.93rem;
+      position: relative;
     }
 
     .sidebar-drawer.expanded .nav-label {
@@ -275,22 +332,25 @@ import { ShamsiDate } from './core/utils/shamsi-date';
       flex-direction: column;
       min-height: 100vh;
       width: 100%;
-      margin-right: 72px;
-      transition: margin-right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      margin-right: 74px;
+      transition: margin-right 0.4s var(--ease-smooth);
+      position: relative;
+      z-index: 1;
     }
 
     .sidebar-drawer.expanded ~ .main-wrapper {
       margin-right: 280px;
     }
 
-    /* Page Header */
+    /* Page Header — frosted glass */
     .page-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 16px 40px;
-      background: var(--theme-surface);
-      border-bottom: 1px solid var(--theme-border);
+      padding: 14px 40px;
+      background: color-mix(in srgb, var(--theme-surface) 78%, transparent);
+      backdrop-filter: blur(16px) saturate(1.4);
+      border-bottom: 1px solid color-mix(in srgb, var(--theme-border) 70%, transparent);
       position: sticky;
       top: 0;
       z-index: 100;
@@ -306,68 +366,56 @@ import { ShamsiDate } from './core/utils/shamsi-date';
     .header-left {
       display: flex;
       align-items: center;
-      gap: 24px;
+      gap: 18px;
     }
 
     .sidebar-toggle {
-      width: 40px;
-      height: 40px;
+      width: 42px;
+      height: 42px;
       border: 1px solid var(--theme-border);
       background: var(--theme-surface);
-      border-radius: 8px;
+      border-radius: 12px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.2s ease;
+      transition: all 0.25s var(--ease-smooth);
       color: var(--theme-text);
     }
 
     .sidebar-toggle:hover {
-      background: var(--theme-surface-hover);
+      border-color: var(--theme-primary);
+      color: var(--theme-primary);
+      box-shadow: 0 4px 14px color-mix(in srgb, var(--theme-primary) 22%, transparent);
+      transform: translateY(-1px);
     }
 
     .sidebar-toggle.active {
-      background: var(--theme-primary);
+      background: var(--gradient-brand);
       color: white;
-      border-color: var(--theme-primary);
+      border-color: transparent;
     }
 
-    .toggle-icon {
-      font-size: 1.2rem;
-    }
+    .toggle-icon { font-size: 1.2rem; }
 
-    .header-date {
-      display: flex;
-      flex-direction: column;
-    }
+    .header-date { display: flex; flex-direction: column; }
 
     .date-label {
       font-size: 0.85rem;
       color: var(--theme-text-secondary);
       direction: rtl;
+      font-weight: 500;
     }
 
     /* Theme selector */
-    .theme-selector {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+    .theme-selector { display: flex; align-items: center; gap: 10px; }
 
-    .theme-label {
-      font-size: 0.8rem;
-      color: var(--theme-text-muted);
-    }
+    .theme-label { font-size: 0.8rem; color: var(--theme-text-muted); }
 
-    .theme-options {
-      display: flex;
-      gap: 8px;
-    }
+    .theme-options { display: flex; gap: 8px; }
 
     .theme-btn {
-      width: 24px;
-      height: 24px;
+      width: 24px; height: 24px;
       border-radius: 50%;
       border: 2px solid transparent;
       cursor: pointer;
@@ -375,10 +423,7 @@ import { ShamsiDate } from './core/utils/shamsi-date';
       opacity: 0.7;
     }
 
-    .theme-btn:hover {
-      transform: scale(1.15);
-      opacity: 1;
-    }
+    .theme-btn:hover { transform: scale(1.15); opacity: 1; }
 
     .theme-btn.active {
       border-color: var(--theme-text);
@@ -387,83 +432,69 @@ import { ShamsiDate } from './core/utils/shamsi-date';
     }
 
     /* User info in header */
-    .header-user {
+    .header-user { display: flex; align-items: center; gap: 10px; }
+
+    .user-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--theme-avatar-gradient);
       display: flex;
       align-items: center;
-      gap: 10px;
-    }
-
-    .user-avatar { 
-      width: 36px; 
-      height: 36px; 
-      border-radius: 50%; 
-      background: var(--theme-avatar-gradient);
-      display: flex; 
-      align-items: center; 
-      justify-content: center; 
-      font-weight: 600; 
+      justify-content: center;
+      font-weight: 700;
       font-size: 0.8rem;
       color: white;
+      box-shadow: 0 4px 12px color-mix(in srgb, var(--theme-primary) 35%, transparent);
+      border: 2px solid rgba(255,255,255,0.6);
     }
 
-    .user-name { 
-      font-size: 0.85rem; 
-      font-weight: 600;
+    .user-name {
+      font-size: 0.85rem;
+      font-weight: 700;
       color: var(--theme-text);
     }
 
     /* Logout button */
     .btn-logout-header {
-      width: 40px;
-      height: 40px;
+      width: 42px;
+      height: 42px;
       border: 1px solid var(--theme-border);
       background: var(--theme-surface);
-      border-radius: 8px;
+      border-radius: 12px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.2s ease;
+      transition: all 0.25s var(--ease-smooth);
       color: var(--theme-text-secondary);
       padding: 0;
     }
 
     .btn-logout-header:hover {
-      background: rgba(180, 106, 106, 0.1);
+      background: color-mix(in srgb, var(--theme-error) 10%, var(--theme-surface));
       border-color: var(--theme-error);
       color: var(--theme-error);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px color-mix(in srgb, var(--theme-error) 25%, transparent);
     }
 
-    .logout-icon {
-      width: 18px;
-      height: 18px;
-    }
+    .logout-icon { width: 18px; height: 18px; }
 
-    /* Page content - with left padding to not overlap sidebar */
+    /* Page content */
     .page-content {
-      padding: 30px 40px;
+      padding: 32px 40px 48px;
       flex: 1;
+      animation: fadeIn 0.4s ease both;
     }
 
     @media (max-width: 768px) {
-      .main-wrapper {
-        margin-right: 60px;
-      }
-      .sidebar-drawer {
-        width: 60px;
-      }
-      .sidebar-drawer.expanded {
-        width: 260px;
-      }
-      .page-header {
-        padding: 12px 16px;
-      }
-      .header-date, .user-name, .theme-label {
-        display: none;
-      }
-      .page-content {
-        padding: 16px;
-      }
+      .main-wrapper { margin-right: 62px; }
+      .sidebar-drawer { width: 62px; }
+      .sidebar-drawer.expanded { width: 260px; }
+      .page-header { padding: 12px 16px; }
+      .header-date, .user-name, .theme-label { display: none; }
+      .page-content { padding: 16px 16px 32px; }
     }
   `]
 })
