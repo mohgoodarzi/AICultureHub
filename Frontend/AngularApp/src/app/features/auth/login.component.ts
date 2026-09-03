@@ -1,9 +1,23 @@
-import { Component } from '@angular/core';
+import { Component, ElementRef, ViewChild, AfterViewInit, OnDestroy, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ThemeService } from '../../core/services/theme.service';
+
+interface NeuralNode {
+  x: number; y: number;
+  vx: number; vy: number;
+  radius: number;
+  pulse: number;
+  pulseSpeed: number;
+}
+
+interface DataPacket {
+  fromIdx: number; toIdx: number;
+  t: number; speed: number;
+  hue: number;
+}
 
 @Component({
   selector: 'app-login',
@@ -36,6 +50,14 @@ import { ThemeService } from '../../core/services/theme.service';
 
         <!-- Login card -->
         <div class="login-card animate-fade-up">
+          <!-- AI neural network canvas: nodes, synapses and data packets -->
+          <canvas #neuralCanvas class="neural-canvas" aria-hidden="true"></canvas>
+
+          <!-- Rotating AI keywords -->
+          <div class="ai-words" aria-hidden="true">
+            <span class="ai-word" *ngFor="let w of aiWords" [style.top.%]="w.top" [style.right.%]="w.right" [style.animation-delay.s]="w.delay">{{ w.text }}</span>
+          </div>
+
           <div class="login-header">
             <img src="assets/logo.png" alt="شرکت طراحی و ساختمان نفت" class="login-logo">
             <h1>شرکت طراحی و ساختمان نفت</h1>
@@ -250,15 +272,59 @@ import { ThemeService } from '../../core/services/theme.service';
 
     @media (prefers-reduced-motion: reduce) {
       .login-card::before, .login-card::after { animation: none; }
+      .neural-canvas { display: none; }
+      .ai-words { display: none; }
     }
 
-    .login-header { text-align: center; margin-bottom: 34px; }
+    /* ===== Neural network canvas layer ===== */
+    .neural-canvas {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ===== Floating AI keywords ===== */
+    .ai-words {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .ai-word {
+      position: absolute;
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.22em;
+      color: rgba(199, 210, 254, 0.5);
+      text-shadow: 0 0 12px rgba(129, 140, 248, 0.8);
+      white-space: nowrap;
+      animation: wordDrift 9s ease-in-out infinite alternate;
+      will-change: transform, opacity;
+    }
+    @keyframes wordDrift {
+      0%   { transform: translate3d(0, 0, 0); opacity: 0.25; }
+      50%  { opacity: 0.9; }
+      100% { transform: translate3d(-14px, -18px, 0); opacity: 0.35; }
+    }
+
+    .login-header { text-align: center; margin-bottom: 34px; position: relative; z-index: 1; }
     .login-header .login-logo {
       max-width: 110px;
       max-height: 74px;
       margin-bottom: 18px;
       filter: drop-shadow(0 6px 16px rgba(0,0,0,0.45));
     }
+    .login-card form {
+      position: relative;
+      z-index: 1;
+    }
+
+    .login-card form .form-group { position: relative; }
+    .login-card form .btn-submit { position: relative; }
+    .login-card form .error-message { position: relative; }
+
     .login-header h1 { margin: 0 0 6px 0; font-size: 1.25rem; color: #ffffff; font-weight: 800; text-shadow: 0 2px 12px rgba(0,0,0,0.4); }
     .login-header p { color: rgba(255,255,255,0.85); margin: 0; font-size: 0.88rem; text-shadow: 0 1px 8px rgba(0,0,0,0.4); }
 
@@ -334,7 +400,7 @@ import { ThemeService } from '../../core/services/theme.service';
       border: 1px solid rgba(255,255,255,0.35);
     }
 
-    .login-footer { text-align: center; margin-top: 26px; font-size: 0.9rem; color: rgba(255,255,255,0.85); text-shadow: 0 1px 8px rgba(0,0,0,0.4); }
+    .login-footer { text-align: center; margin-top: 26px; font-size: 0.9rem; color: rgba(255,255,255,0.85); text-shadow: 0 1px 8px rgba(0,0,0,0.4); position: relative; z-index: 1; }
     .login-footer a {
       color: #ffffff;
       text-decoration: none;
@@ -351,16 +417,179 @@ import { ThemeService } from '../../core/services/theme.service';
     }
   `]
 })
-export class LoginComponent {
+export class LoginComponent implements AfterViewInit, OnDestroy {
   credentials = { username: '', password: '' };
   isLoading = false;
   errorMessage = '';
 
+  @ViewChild('neuralCanvas') neuralCanvas!: ElementRef<HTMLCanvasElement>;
+  private ctx: CanvasRenderingContext2D | null = null;
+  private rafId = 0;
+  private resizeObs?: ResizeObserver;
+  private nodes: NeuralNode[] = [];
+  private packets: DataPacket[] = [];
+  private W = 0; private H = 0;
+
+  // Floating AI keywords drifting across the form
+  aiWords = [
+    { text: 'AI', top: 12, right: 6, delay: 0 },
+    { text: 'ML', top: 30, right: 70, delay: 2.5 },
+    { text: 'DEEP LEARNING', top: 48, right: 3, delay: 1.2 },
+    { text: 'NLP', top: 66, right: 62, delay: 3.5 },
+    { text: 'NEURAL', top: 22, right: 40, delay: 5 },
+    { text: 'DATA', top: 74, right: 12, delay: 1.8 },
+    { text: 'GPT', top: 55, right: 30, delay: 4.2 },
+    { text: 'AI', top: 84, right: 48, delay: 0.8 },
+  ];
+
   constructor(
     private authService: AuthService,
     private router: Router,
-    private themeService: ThemeService
+    private themeService: ThemeService,
+    private zone: NgZone
   ) {}
+
+  ngAfterViewInit(): void {
+    this.initNeuralCanvas();
+  }
+
+  ngOnDestroy(): void {
+    cancelAnimationFrame(this.rafId);
+    this.resizeObs?.disconnect();
+  }
+
+  private initNeuralCanvas(): void {
+    const canvas = this.neuralCanvas?.nativeElement;
+    if (!canvas) return;
+    this.ctx = canvas.getContext('2d');
+    if (!this.ctx) return;
+
+    const resize = () => {
+      const rect = canvas.parentElement!.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      this.W = rect.width; this.H = rect.height;
+      canvas.width = this.W * dpr;
+      canvas.height = this.H * dpr;
+      canvas.style.width = `${this.W}px`;
+      canvas.style.height = `${this.H}px`;
+      this.ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
+      this.seedNodes();
+    };
+
+    resize();
+    this.resizeObs = new ResizeObserver(resize);
+    this.resizeObs.observe(canvas.parentElement!);
+
+    // Run outside Angular zone so change detection never fires from the animation loop
+    this.zone.runOutsideAngular(() => this.animate());
+  }
+
+  private seedNodes(): void {
+    const count = Math.max(18, Math.min(34, Math.floor((this.W * this.H) / 9000)));
+    this.nodes = Array.from({ length: count }, () => ({
+      x: Math.random() * this.W,
+      y: Math.random() * this.H,
+      vx: (Math.random() - 0.5) * 0.35,
+      vy: (Math.random() - 0.5) * 0.35,
+      radius: 1.2 + Math.random() * 2.2,
+      pulse: Math.random() * Math.PI * 2,
+      pulseSpeed: 0.015 + Math.random() * 0.03
+    }));
+    this.packets = [];
+  }
+
+  private animate(): void {
+    this.rafId = requestAnimationFrame(() => this.animate());
+    const ctx = this.ctx;
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, this.W, this.H);
+
+    // --- Moving nodes ---
+    for (const n of this.nodes) {
+      n.x += n.vx; n.y += n.vy;
+      n.pulse += n.pulseSpeed;
+      if (n.x < 0 || n.x > this.W) n.vx *= -1;
+      if (n.y < 0 || n.y > this.H) n.vy *= -1;
+    }
+
+    // --- Synapse connections between nearby nodes ---
+    const maxDist = Math.min(150, this.W * 0.28);
+    for (let i = 0; i < this.nodes.length; i++) {
+      for (let j = i + 1; j < this.nodes.length; j++) {
+        const a = this.nodes[i], b = this.nodes[j];
+        const dx = a.x - b.x, dy = a.y - b.y;
+        const d2 = dx * dx + dy * dy;
+        if (d2 > maxDist * maxDist) continue;
+        const alpha = (1 - Math.sqrt(d2) / maxDist) * 0.5;
+        ctx.strokeStyle = `rgba(165, 180, 252, ${alpha})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+      }
+    }
+
+    // --- Spawn data packets traveling along synapses ---
+    if (this.packets.length < 6 && this.nodes.length > 2 && Math.random() < 0.12) {
+      const fromIdx = Math.floor(Math.random() * this.nodes.length);
+      let best = -1, bestD = Infinity;
+      for (let k = 0; k < this.nodes.length; k++) {
+        if (k === fromIdx) continue;
+        const dx = this.nodes[fromIdx].x - this.nodes[k].x;
+        const dy = this.nodes[fromIdx].y - this.nodes[k].y;
+        const d = dx * dx + dy * dy;
+        if (d < bestD && d <= maxDist * maxDist) { bestD = d; best = k; }
+      }
+      if (best >= 0) {
+        this.packets.push({ fromIdx, toIdx: best, t: 0, speed: 0.012 + Math.random() * 0.02, hue: [190, 265, 320][Math.floor(Math.random() * 3)] });
+      }
+    }
+
+    // --- Draw traveling data pulses with glow trails ---
+    for (let p = this.packets.length - 1; p >= 0; p--) {
+      const pkt = this.packets[p];
+      pkt.t += pkt.speed;
+      if (pkt.t >= 1) { this.packets.splice(p, 1); continue; }
+      const a = this.nodes[pkt.fromIdx], b = this.nodes[pkt.toIdx];
+      if (!a || !b) { this.packets.splice(p, 1); continue; }
+      const x = a.x + (b.x - a.x) * pkt.t;
+      const y = a.y + (b.y - a.y) * pkt.t;
+
+      const grad = ctx.createLinearGradient(
+        a.x + (b.x - a.x) * Math.max(0, pkt.t - 0.25), a.y + (b.y - a.y) * Math.max(0, pkt.t - 0.25), x, y
+      );
+      grad.addColorStop(0, `hsla(${pkt.hue}, 95%, 70%, 0)`);
+      grad.addColorStop(1, `hsla(${pkt.hue}, 95%, 72%, 0.9)`);
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.moveTo(a.x + (b.x - a.x) * Math.max(0, pkt.t - 0.25), a.y + (b.y - a.y) * Math.max(0, pkt.t - 0.25));
+      ctx.lineTo(x, y);
+      ctx.stroke();
+
+      ctx.fillStyle = `hsla(${pkt.hue}, 100%, 80%, 0.95)`;
+      ctx.shadowColor = `hsla(${pkt.hue}, 100%, 70%, 1)`;
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.arc(x, y, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+
+    // --- Draw pulsing neural nodes ---
+    for (const n of this.nodes) {
+      const glow = 0.55 + Math.sin(n.pulse) * 0.35;
+      ctx.fillStyle = `rgba(199, 210, 254, ${glow})`;
+      ctx.shadowColor = 'rgba(129, 140, 248, 0.9)';
+      ctx.shadowBlur = 6 + glow * 6;
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+  }
 
   onSubmit(): void {
     this.isLoading = true;
