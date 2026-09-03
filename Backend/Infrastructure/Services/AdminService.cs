@@ -17,10 +17,15 @@ public class AdminService : IAdminService
 
     public async Task<PaginatedResult<UserDto>> GetUsersAsync(PagedRequest request)
     {
-        var query = _context.Users.Include(u => u.UserRoles).ThenInclude(ur => ur.Role).Include(u => u.CurrentLevel).Include(u => u.Department).Include(u => u.Position).Where(u => u.IsActive);
-        if (!string.IsNullOrEmpty(request.Search)) query = query.Where(u => u.Username.Contains(request.Search) || u.Email.Contains(request.Search) || u.FullName.Contains(request.Search));
+        // Admin list shows ALL users (active and inactive) with status; deactivate must not make users disappear.
+        var query = _context.Users.Include(u => u.UserRoles).ThenInclude(ur => ur.Role).Include(u => u.CurrentLevel).Include(u => u.Department).Include(u => u.Position).AsQueryable();
+        if (!string.IsNullOrEmpty(request.Search))
+        {
+            var term = request.Search.Trim();
+            query = query.Where(u => u.Username.Contains(term) || u.Email.Contains(term) || (u.FirstName + " " + u.LastName).Contains(term) || (u.EmployeeId != null && u.EmployeeId.Contains(term)));
+        }
         var totalCount = await query.CountAsync();
-        var users = await query.OrderBy(u => u.Username).Skip((request.PageNumber - 1) * request.PageSize).Take(request.PageSize).Select(u => new UserDto { Id = u.Id, Username = u.Username, Email = u.Email, FirstName = u.FirstName, LastName = u.LastName, FullName = u.FullName, DepartmentId = u.DepartmentId, DepartmentName = u.Department != null ? u.Department.Name : null, PositionId = u.PositionId, PositionName = u.Position != null ? u.Position.Name : null, Location = u.Location, AvatarUrl = u.AvatarUrl, IsActive = u.IsActive, TotalPoints = u.TotalPoints, LearningStreak = u.LearningStreak, CurrentLevel = u.CurrentLevel != null ? new LevelDto { Id = u.CurrentLevel.Id, LevelNumber = u.CurrentLevel.LevelNumber, Name = u.CurrentLevel.Name, Color = u.CurrentLevel.Color } : null, Roles = u.UserRoles.Select(ur => ur.Role.Name).ToList() }).ToListAsync();
+        var users = await query.OrderBy(u => u.Username).Skip((request.PageNumber - 1) * request.PageSize).Take(request.PageSize).Select(u => new UserDto { Id = u.Id, Username = u.Username, Email = u.Email, FirstName = u.FirstName, LastName = u.LastName, FullName = u.FullName, DepartmentId = u.DepartmentId, DepartmentName = u.Department != null ? u.Department.Name : null, PositionId = u.PositionId, PositionName = u.Position != null ? u.Position.Name : null, Location = u.Location, EmployeeId = u.EmployeeId, AvatarUrl = u.AvatarUrl, IsActive = u.IsActive, TotalPoints = u.TotalPoints, LearningStreak = u.LearningStreak, CurrentLevel = u.CurrentLevel != null ? new LevelDto { Id = u.CurrentLevel.Id, LevelNumber = u.CurrentLevel.LevelNumber, Name = u.CurrentLevel.Name, Color = u.CurrentLevel.Color } : null, Roles = u.UserRoles.Select(ur => ur.Role.Name).ToList() }).ToListAsync();
         return new PaginatedResult<UserDto> { Items = users, TotalCount = totalCount, PageNumber = request.PageNumber, PageSize = request.PageSize };
     }
 
@@ -35,6 +40,8 @@ public class AdminService : IAdminService
     {
         if (await _context.Users.AnyAsync(u => u.Username == request.Username)) throw new InvalidOperationException("Username already exists");
         if (await _context.Users.AnyAsync(u => u.Email == request.Email)) throw new InvalidOperationException("Email already exists");
+        if (!string.IsNullOrWhiteSpace(request.EmployeeId) && await _context.Users.AnyAsync(u => u.EmployeeId == request.EmployeeId.Trim()))
+            throw new InvalidOperationException("این شماره پرسنلی قبلاً در سامانه ثبت شده است");
         var salt = GenerateSalt();
         var user = new User { Username = request.Username, Email = request.Email, PasswordHash = HashPassword(request.Password, salt), PasswordSalt = salt, FirstName = request.FirstName, LastName = request.LastName, DepartmentId = request.DepartmentId, PositionId = request.PositionId, EmployeeId = request.EmployeeId, CurrentLevelId = 1, IsActive = true, IsEmailVerified = true, CreatedDate = DateTime.UtcNow };
         _context.Users.Add(user);
@@ -185,6 +192,7 @@ public class AdminService : IAdminService
     {
         var totalUsers = await _context.Users.CountAsync();
         var activeUsers = await _context.Users.CountAsync(u => u.IsActive);
+        var inactiveUsers = totalUsers - activeUsers;
         var newUsersThisMonth = await _context.Users.CountAsync(u => u.CreatedDate >= DateTime.UtcNow.AddDays(-30));
         var totalArticles = await _context.Articles.CountAsync(a => a.IsActive);
         var totalCourses = await _context.Courses.CountAsync(c => c.IsActive);
@@ -197,7 +205,7 @@ public class AdminService : IAdminService
         var popularArticles = await _context.Articles.Where(a => a.IsActive && a.IsPublished).OrderByDescending(a => a.ViewCount).Take(5).Select(a => new PopularItemDto { Id = a.Id, Title = a.Title, Count = a.ViewCount }).ToListAsync();
         var popularCourses = await _context.Courses.Where(c => c.IsActive && c.IsPublished).OrderByDescending(c => c.EnrolledCount).Take(5).Select(c => new PopularItemDto { Id = c.Id, Title = c.Title, Count = c.EnrolledCount }).ToListAsync();
         var topUsers = await _context.Users.Include(u => u.Department).Where(u => u.IsActive).OrderByDescending(u => u.TotalPoints).Take(10).Select(u => new ActiveUserDto { UserId = u.Id, DisplayName = u.FullName, Department = u.Department != null ? u.Department.Name : null, Points = u.TotalPoints }).ToListAsync();
-        return new AnalyticsDto { TotalUsers = totalUsers, ActiveUsers = activeUsers, NewUsersThisMonth = newUsersThisMonth, TotalArticles = totalArticles, TotalCourses = totalCourses, CourseCompletions = courseCompletions, TotalQuizzes = totalQuizzes, QuizAttempts = quizAttempts, AverageQuizScore = averageQuizScore, ChallengesCompleted = challengesCompleted, TotalPointsAwarded = totalPointsAwarded, PopularArticles = popularArticles, PopularCourses = popularCourses, TopUsers = topUsers };
+        return new AnalyticsDto { TotalUsers = totalUsers, ActiveUsers = activeUsers, InactiveUsers = inactiveUsers, NewUsersThisMonth = newUsersThisMonth, TotalArticles = totalArticles, TotalCourses = totalCourses, CourseCompletions = courseCompletions, TotalQuizzes = totalQuizzes, QuizAttempts = quizAttempts, AverageQuizScore = averageQuizScore, ChallengesCompleted = challengesCompleted, TotalPointsAwarded = totalPointsAwarded, PopularArticles = popularArticles, PopularCourses = popularCourses, TopUsers = topUsers };
     }
 
     public async Task<List<LevelDto>> GetLevelsAsync() => await _context.Levels.Where(l => l.IsActive).OrderBy(l => l.LevelNumber).Select(l => new LevelDto { Id = l.Id, LevelNumber = l.LevelNumber, Name = l.Name, Description = l.Description, PointsRequired = l.PointsRequired, Color = l.Color }).ToListAsync();

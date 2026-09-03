@@ -144,6 +144,10 @@ using (var scope = app.Services.CreateScope())
         // created before they were added, etc.) so inserts don't fail with "Invalid column name".
         SyncMissingColumns(dbContext);
 
+        // Personnel number must be unique per employee. Recreate the index as FILTERED so multiple
+        // NULL/empty values are allowed (users without a personnel number) while duplicates are impossible.
+        EnsureEmployeeIdUniqueIndex(dbContext);
+
         // Idempotent permission sync: add any missing permission codes (handles schema evolution
         // on databases created before the RBAC redesign, where old lowercase codes existed).
         var rbacPermissions = new (string Name, string Code, string Module, string Description)[]
@@ -619,6 +623,42 @@ using (var scope = app.Services.CreateScope())
     {
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
         logger.LogWarning(ex, "Database seeding failed.");
+    }
+}
+
+static void EnsureEmployeeIdUniqueIndex(ApplicationDbContext dbContext)
+{
+    var conn = dbContext.Database.GetDbConnection();
+    var openedHere = false;
+    if (conn.State != System.Data.ConnectionState.Open) { conn.Open(); openedHere = true; }
+    try
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+DECLARE @sql NVARCHAR(MAX) = N'';
+SELECT @sql = @sql + 'ALTER TABLE [Users] DROP CONSTRAINT [' + name + ']; '
+FROM sys.indexes
+WHERE object_id = OBJECT_ID('Users') AND name LIKE '%EmployeeId%' AND has_filter = 0 AND is_unique_constraint = 1;
+EXEC(@sql);
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID('Users') AND name LIKE '%EmployeeId%' AND has_filter = 0 AND is_unique_constraint = 0)
+BEGIN
+    DROP INDEX [UQ_Users_EmployeeId] ON [Users];
+    DROP INDEX [IX_Users_EmployeeId] ON [Users];
+END
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID('Users') AND name = 'IX_Users_EmployeeId')
+BEGIN
+    CREATE UNIQUE INDEX [IX_Users_EmployeeId] ON [Users] ([EmployeeId])
+    WHERE [EmployeeId] IS NOT NULL AND [EmployeeId] <> '';
+END";
+        cmd.ExecuteNonQuery();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"EmployeeId index sync skipped: {ex.Message}");
+    }
+    finally
+    {
+        if (openedHere) conn.Close();
     }
 }
 

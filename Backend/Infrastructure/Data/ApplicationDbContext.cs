@@ -56,7 +56,9 @@ public class ApplicationDbContext : DbContext
         {
             entity.HasIndex(e => e.Username).IsUnique();
             entity.HasIndex(e => e.Email).IsUnique();
-            entity.HasIndex(e => e.EmployeeId).IsUnique();
+            // Filtered unique index: multiple NULLs allowed (users without a personnel number),
+            // but each non-NULL personnel number must be unique — duplicates impossible at DB level.
+            entity.HasIndex(e => e.EmployeeId).IsUnique().HasFilter("[EmployeeId] IS NOT NULL AND [EmployeeId] <> ''");
             entity.HasOne(e => e.CurrentLevel)
                   .WithMany(l => l.Users)
                   .HasForeignKey(e => e.CurrentLevelId)

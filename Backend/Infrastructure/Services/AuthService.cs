@@ -91,6 +91,11 @@ public class AuthService : IAuthService
             throw new InvalidOperationException("Email already exists");
         }
 
+        if (!string.IsNullOrWhiteSpace(request.EmployeeId) && await _context.Users.AnyAsync(u => u.EmployeeId == request.EmployeeId.Trim()))
+        {
+            throw new InvalidOperationException("این شماره پرسنلی قبلاً ثبت شده است. هر کارمند فقط یک‌بار می‌تواند ثبت‌نام کند.");
+        }
+
         var salt = GenerateSalt();
         var passwordHash = HashPassword(request.Password, salt);
 
@@ -104,7 +109,7 @@ public class AuthService : IAuthService
             LastName = request.LastName,
             DepartmentId = request.DepartmentId,
             PositionId = request.PositionId,
-            EmployeeId = request.EmployeeId,
+            EmployeeId = string.IsNullOrWhiteSpace(request.EmployeeId) ? null : request.EmployeeId.Trim(),
             CurrentLevelId = 1,
             IsActive = true,
             IsEmailVerified = true,

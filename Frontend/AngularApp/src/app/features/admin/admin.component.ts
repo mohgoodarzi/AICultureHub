@@ -1,13 +1,22 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Pipe, PipeTransform } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 
+@Pipe({ name: 'compactJoin', standalone: true })
+export class CompactJoinPipe implements PipeTransform {
+  transform(values: (string | null | undefined)[] | null | undefined): string {
+    if (!values) return '-';
+    const joined = values.filter(v => !!v && String(v).trim() !== '').join(' / ');
+    return joined || '-';
+  }
+}
+
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, CompactJoinPipe],
   template: `
     <div class="admin-page">
       <!-- Admin Hero Header -->
@@ -43,6 +52,7 @@ import { environment } from '../../../environments/environment';
         <div class="stats-grid">
           <div class="stat-card animate-pop delay-1"><div class="stat-ico si-1">👥</div><div class="stat-body"><div class="stat-value">{{ analytics.totalUsers }}</div><div class="stat-label">کاربران</div></div></div>
           <div class="stat-card animate-pop delay-2"><div class="stat-ico si-2">⚡</div><div class="stat-body"><div class="stat-value">{{ analytics.activeUsers }}</div><div class="stat-label">کاربران فعال</div></div></div>
+          <div class="stat-card animate-pop delay-3"><div class="stat-ico si-7">🚫</div><div class="stat-body"><div class="stat-value">{{ analytics.inactiveUsers }}</div><div class="stat-label">کاربران غیرفعال</div></div></div>
           <div class="stat-card animate-pop delay-3"><div class="stat-ico si-3">📝</div><div class="stat-body"><div class="stat-value">{{ analytics.totalArticles }}</div><div class="stat-label">مقالات</div></div></div>
           <div class="stat-card animate-pop delay-4"><div class="stat-ico si-4">🎓</div><div class="stat-body"><div class="stat-value">{{ analytics.totalCourses }}</div><div class="stat-label">دوره‌ها</div></div></div>
           <div class="stat-card animate-pop delay-2"><div class="stat-ico si-5">🧪</div><div class="stat-body"><div class="stat-value">{{ analytics.quizAttempts }}</div><div class="stat-label">آزمون‌ها</div></div></div>
@@ -214,13 +224,18 @@ import { environment } from '../../../environments/environment';
       <div class="crud-section" *ngIf="activeTab === 'users'">
         <div class="crud-header">
           <h3>مدیریت کاربران</h3>
-          <button class="btn-primary" (click)="openUserModal()">+ کاربر جدید</button>
+          <div style="display:flex; gap:12px; align-items:center;">
+            <input type="text" [(ngModel)]="userSearch" (ngModelChange)="onUserSearch()" placeholder="جستجو: نام، ایمیل، شماره پرسنلی..." class="user-search-input">
+            <button class="btn-primary" (click)="openUserModal()">+ کاربر جدید</button>
+          </div>
         </div>
         <table class="crud-table">
           <thead>
             <tr>
               <th>نام</th>
+              <th>شماره پرسنلی</th>
               <th>ایمیل</th>
+              <th>واحد / سمت</th>
               <th>امتیاز</th>
               <th>نقش</th>
               <th>وضعیت</th>
@@ -230,7 +245,9 @@ import { environment } from '../../../environments/environment';
           <tbody>
             <tr *ngFor="let user of users">
               <td>{{ user.firstName }} {{ user.lastName }}</td>
+              <td>{{ user.employeeId || '-' }}</td>
               <td>{{ user.email }}</td>
+              <td>{{ [user.departmentName, user.positionName] | compactJoin }}</td>
               <td>{{ user.totalPoints }}</td>
               <td>{{ user.roles?.join(', ') }}</td>
               <td>
@@ -246,8 +263,18 @@ import { environment } from '../../../environments/environment';
                 </button>
               </td>
             </tr>
+            <tr *ngIf="users.length === 0">
+              <td colspan="8" style="text-align:center;color:var(--theme-text-muted)">کاربری یافت نشد</td>
+            </tr>
           </tbody>
         </table>
+
+        <div class="pagination" *ngIf="userTotalPages > 1">
+          <button (click)="goToUserPage(userPage - 1)" [disabled]="userPage === 1">قبلی</button>
+          <button *ngFor="let p of userPageNumbers" [class.active]="p === userPage" (click)="goToUserPage(p)">{{ p }}</button>
+          <span>صفحه {{ userPage }} از {{ userTotalPages }}</span>
+          <button (click)="goToUserPage(userPage + 1)" [disabled]="userPage === userTotalPages">بعدی</button>
+        </div>
       </div>
 
       <!-- Organization Master Data Section (Units + Positions) -->
@@ -1113,6 +1140,35 @@ import { environment } from '../../../environments/environment';
 
     .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
 
+    .user-search-input {
+      padding: 10px 14px;
+      border: 1.5px solid var(--theme-border);
+      border-radius: 10px;
+      font-size: 0.9rem;
+      background: var(--theme-surface);
+      color: var(--theme-text);
+      min-width: 280px;
+      font-family: inherit;
+    }
+    .user-search-input:focus { outline: none; border-color: var(--theme-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-primary) 12%, transparent); }
+
+    .pagination { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 18px; flex-wrap: wrap; }
+    .pagination button {
+      padding: 8px 14px;
+      border: 1.5px solid var(--theme-border);
+      background: var(--theme-surface);
+      color: var(--theme-text);
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.85rem;
+      transition: all 0.2s ease;
+    }
+    .pagination button:hover:not(:disabled):not(.active) { border-color: var(--theme-primary); color: var(--theme-primary); }
+    .pagination button.active { background: var(--theme-primary); color: #fff; border-color: var(--theme-primary); font-weight: 700; }
+    .pagination button:disabled { opacity: 0.45; cursor: not-allowed; }
+    .pagination span { color: var(--theme-text-secondary); font-size: 0.85rem; margin: 0 8px; }
+
     .org-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: start; }
     .org-pane { background: var(--theme-surface); border: 1px solid var(--theme-border); border-radius: var(--radius-lg); padding: 18px; box-shadow: var(--theme-card-shadow); }
     .org-pane .crud-header h3 { margin: 0; font-size: 1rem; font-weight: 800; color: var(--theme-text); }
@@ -1372,6 +1428,13 @@ export class AdminComponent implements OnInit {
   editingOrgId: number | null = null;
   orgForm: any = { name: '', code: '', description: '', departmentId: null };
 
+  userPage = 1;
+  userPageSize = 10;
+  userTotalCount = 0;
+  userTotalPages = 1;
+  userPageNumbers: number[] = [];
+  userSearch = '';
+
   constructor(private http: HttpClient) {}
 
   ngOnInit(): void {
@@ -1401,9 +1464,35 @@ export class AdminComponent implements OnInit {
   }
 
   loadUsers(): void {
-    this.http.get<any>(`${this.apiUrl}/admin/users?pageNumber=1&pageSize=50`).subscribe({
-      next: (result) => this.users = result.items || []
+    const params = `pageNumber=${this.userPage}&pageSize=10` + (this.userSearch ? `&search=${encodeURIComponent(this.userSearch)}` : '');
+    this.http.get<any>(`${this.apiUrl}/admin/users?${params}`).subscribe({
+      next: (result) => {
+        this.users = result.items || [];
+        this.userTotalCount = result.totalCount || 0;
+        this.userTotalPages = Math.max(1, Math.ceil(this.userTotalCount / 10));
+        this.buildUserPageNumbers();
+      },
+      error: (err) => console.error('Failed to load users:', err)
     });
+  }
+
+  onUserSearch(): void {
+    this.userPage = 1;
+    this.loadUsers();
+  }
+
+  goToUserPage(page: number): void {
+    if (page < 1 || page > this.userTotalPages) return;
+    this.userPage = page;
+    this.loadUsers();
+  }
+
+  buildUserPageNumbers(): void {
+    const pages: number[] = [];
+    const start = Math.max(1, this.userPage - 2);
+    const end = Math.min(this.userTotalPages, start + 4);
+    for (let p = Math.max(1, end - 4); p <= end; p++) pages.push(p);
+    this.userPageNumbers = pages;
   }
 
   loadArticles(): void {
@@ -1766,7 +1855,11 @@ export class AdminComponent implements OnInit {
       : `کاربر «${user.firstName} ${user.lastName}» فعال شود؟`;
     if (!confirm(msg)) return;
     this.http.post(`${this.apiUrl}/admin/users/${user.id}/${action}`, {}).subscribe({
-      next: () => { user.isActive = !user.isActive; },
+      next: () => {
+        user.isActive = !user.isActive;
+        this.loadAnalytics();
+        this.loadUsers();
+      },
       error: (err) => alert('خطا: ' + (err.error?.message || err.message))
     });
   }
