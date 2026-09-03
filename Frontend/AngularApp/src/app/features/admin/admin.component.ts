@@ -1730,18 +1730,32 @@ export class AdminComponent implements OnInit {
   }
 
   deleteUnit(id: number): void {
-    if (!confirm('آیا از حذف این واحد اطمینان دارید؟')) return;
-    this.http.delete(`${this.apiUrl}/admin/departments/${id}`).subscribe({
-      next: () => this.loadOrgData(),
-      error: (err) => alert(err.error?.message || 'این واحد به کاربران اختصاص یافته و قابل حذف نیست')
+    if (!confirm('آیا از حذف این واحد سازمانی اطمینان دارید؟ این عملیات قابل بازگشت نیست.')) return;
+    this.http.delete(`${this.apiUrl}/admin/departments/${id}`, { observe: 'response' }).subscribe({
+      next: (resp) => {
+        if (resp.status === 204) {
+          alert('واحد سازمانی با موفقیت حذف شد');
+          this.loadOrgData();
+        }
+      },
+      error: (err) => {
+        alert('خطا در حذف واحد: ' + (err.error?.message || err.message || 'خطای سرور'));
+      }
     });
   }
 
   deletePosition(id: number): void {
-    if (!confirm('آیا از حذف این سمت اطمینان دارید؟')) return;
-    this.http.delete(`${this.apiUrl}/admin/positions/${id}`).subscribe({
-      next: () => this.loadOrgData(),
-      error: (err) => alert(err.error?.message || 'این سمت به کاربران اختصاص یافته و قابل حذف نیست')
+    if (!confirm('آیا از حذف این سمت سازمانی اطمینان دارید؟ این عملیات قابل بازگشت نیست.')) return;
+    this.http.delete(`${this.apiUrl}/admin/positions/${id}`, { observe: 'response' }).subscribe({
+      next: (resp) => {
+        if (resp.status === 204) {
+          alert('سمت سازمانی با موفقیت حذف شد');
+          this.loadOrgData();
+        }
+      },
+      error: (err) => {
+        alert('خطا در حذف سمت: ' + (err.error?.message || err.message || 'خطای سرور'));
+      }
     });
   }
 

@@ -210,12 +210,39 @@ public class AdminService : IAdminService
     public async Task<List<DepartmentDto>> GetDepartmentsAsync() => await _context.Departments.OrderBy(d => d.IsActive == false).ThenBy(d => d.DisplayOrder).ThenBy(d => d.Name).Select(d => new DepartmentDto { Id = d.Id, Name = d.Name, Description = d.Description, Code = d.Code, ParentId = d.ParentId, DisplayOrder = d.DisplayOrder, IsActive = d.IsActive }).ToListAsync();
     public async Task<DepartmentDto> CreateDepartmentAsync(DepartmentDto model) { var dept = new Department { Name = model.Name, Description = model.Description, Code = model.Code, ParentId = model.ParentId, DisplayOrder = model.DisplayOrder, IsActive = true, CreatedDate = DateTime.UtcNow }; _context.Departments.Add(dept); await _context.SaveChangesAsync(); return new DepartmentDto { Id = dept.Id, Name = dept.Name, Description = dept.Description, Code = dept.Code, ParentId = dept.ParentId, DisplayOrder = dept.DisplayOrder, IsActive = dept.IsActive }; }
     public async Task<DepartmentDto?> UpdateDepartmentAsync(int id, DepartmentDto model) { var dept = await _context.Departments.FindAsync(id); if (dept == null) return null; dept.Name = model.Name; dept.Description = model.Description; dept.Code = model.Code; dept.ParentId = model.ParentId; dept.DisplayOrder = model.DisplayOrder; dept.IsActive = model.IsActive; dept.ModifiedDate = DateTime.UtcNow; await _context.SaveChangesAsync(); return new DepartmentDto { Id = dept.Id, Name = dept.Name, Description = dept.Description, Code = dept.Code, ParentId = dept.ParentId, DisplayOrder = dept.DisplayOrder, IsActive = dept.IsActive }; }
-    public async Task<bool> DeleteDepartmentAsync(int id) { var dept = await _context.Departments.FindAsync(id); if (dept == null) return false; if (await _context.Users.AnyAsync(u => u.DepartmentId == id)) return false; dept.IsActive = false; dept.ModifiedDate = DateTime.UtcNow; await _context.SaveChangesAsync(); return true; }
+    public async Task<bool> DeleteDepartmentAsync(int id)
+    {
+        var dept = await _context.Departments.FindAsync(id);
+        if (dept == null) return false;
+
+        if (await _context.Users.AnyAsync(u => u.DepartmentId == id))
+            throw new InvalidOperationException("این واحد به کاربران اختصاص یافته است و قابل حذف نیست. ابتدا کاربران را به واحد دیگری منتقل کنید.");
+
+        if (await _context.Positions.AnyAsync(p => p.DepartmentId == id))
+            throw new InvalidOperationException("این واحد به سمت‌های سازمانی اختصاص یافته است و قابل حذف نیست.");
+
+        // Hard delete: the record is unused, remove it permanently
+        _context.Departments.Remove(dept);
+        await _context.SaveChangesAsync();
+        return true;
+    }
 
     public async Task<List<PositionDto>> GetPositionsAsync() => await _context.Positions.Include(p => p.Department).OrderBy(p => p.IsActive == false).ThenBy(p => p.DisplayOrder).ThenBy(p => p.Name).Select(p => new PositionDto { Id = p.Id, Name = p.Name, Description = p.Description, Code = p.Code, DepartmentId = p.DepartmentId, DepartmentName = p.Department != null ? p.Department.Name : null, DisplayOrder = p.DisplayOrder, IsActive = p.IsActive }).ToListAsync();
     public async Task<PositionDto> CreatePositionAsync(PositionDto model) { var pos = new Position { Name = model.Name, Description = model.Description, Code = model.Code, DepartmentId = model.DepartmentId, DisplayOrder = model.DisplayOrder, IsActive = true, CreatedDate = DateTime.UtcNow }; _context.Positions.Add(pos); await _context.SaveChangesAsync(); var dept = model.DepartmentId.HasValue ? await _context.Departments.FindAsync(model.DepartmentId) : null; return new PositionDto { Id = pos.Id, Name = pos.Name, Description = pos.Description, Code = pos.Code, DepartmentId = pos.DepartmentId, DepartmentName = dept?.Name, DisplayOrder = pos.DisplayOrder, IsActive = pos.IsActive }; }
     public async Task<PositionDto?> UpdatePositionAsync(int id, PositionDto model) { var pos = await _context.Positions.FindAsync(id); if (pos == null) return null; pos.Name = model.Name; pos.Description = model.Description; pos.Code = model.Code; pos.DepartmentId = model.DepartmentId; pos.DisplayOrder = model.DisplayOrder; pos.IsActive = model.IsActive; pos.ModifiedDate = DateTime.UtcNow; await _context.SaveChangesAsync(); var dept = model.DepartmentId.HasValue ? await _context.Departments.FindAsync(model.DepartmentId) : null; return new PositionDto { Id = pos.Id, Name = pos.Name, Description = pos.Description, Code = pos.Code, DepartmentId = pos.DepartmentId, DepartmentName = dept?.Name, DisplayOrder = pos.DisplayOrder, IsActive = pos.IsActive }; }
-    public async Task<bool> DeletePositionAsync(int id) { var pos = await _context.Positions.FindAsync(id); if (pos == null) return false; if (await _context.Users.AnyAsync(u => u.PositionId == id)) return false; pos.IsActive = false; pos.ModifiedDate = DateTime.UtcNow; await _context.SaveChangesAsync(); return true; }
+    public async Task<bool> DeletePositionAsync(int id)
+    {
+        var pos = await _context.Positions.FindAsync(id);
+        if (pos == null) return false;
+
+        if (await _context.Users.AnyAsync(u => u.PositionId == id))
+            throw new InvalidOperationException("این سمت به کاربران اختصاص یافته است و قابل حذف نیست. ابتدا کاربران را به سمت دیگری منتقل کنید.");
+
+        // Hard delete: the record is unused, remove it permanently
+        _context.Positions.Remove(pos);
+        await _context.SaveChangesAsync();
+        return true;
+    }
 
     public async Task<List<RoleDto>> GetRolesAsync() => await _context.Roles.Include(r => r.RolePermissions).ThenInclude(rp => rp.Permission).Where(r => r.IsActive).OrderBy(r => r.Name).Select(r => new RoleDto { Id = r.Id, Name = r.Name, Description = r.Description, IsActive = r.IsActive, CreatedDate = r.CreatedDate, Permissions = r.RolePermissions.Where(rp => rp.Permission.IsActive).Select(rp => new PermissionDto { Id = rp.Permission.Id, Name = rp.Permission.Name, Code = rp.Permission.Code, Module = rp.Permission.Module, Description = rp.Permission.Description, IsActive = rp.Permission.IsActive }).ToList(), UserCount = r.UserRoles.Count }).ToListAsync();
     public async Task<RoleDto?> GetRoleByIdAsync(int id) { var role = await _context.Roles.Include(r => r.RolePermissions).ThenInclude(rp => rp.Permission).FirstOrDefaultAsync(r => r.Id == id); if (role == null) return null; return new RoleDto { Id = role.Id, Name = role.Name, Description = role.Description, IsActive = role.IsActive, CreatedDate = role.CreatedDate, Permissions = role.RolePermissions.Where(rp => rp.Permission.IsActive).Select(rp => new PermissionDto { Id = rp.Permission.Id, Name = rp.Permission.Name, Code = rp.Permission.Code, Module = rp.Permission.Module, Description = rp.Permission.Description, IsActive = rp.Permission.IsActive }).ToList(), UserCount = role.UserRoles.Count }; }

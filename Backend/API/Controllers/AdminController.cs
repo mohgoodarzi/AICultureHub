@@ -231,9 +231,16 @@ public class AdminController : ControllerBase
     [HttpDelete("departments/{id}")]
     public async Task<IActionResult> DeleteDepartment(int id)
     {
-        var result = await _adminService.DeleteDepartmentAsync(id);
-        if (!result) return BadRequest(new { message = "Cannot delete department that is assigned to users" });
-        return NoContent();
+        try
+        {
+            var result = await _adminService.DeleteDepartmentAsync(id);
+            if (!result) return NotFound(new { message = "واحد سازمانی یافت نشد" });
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpGet("positions")]
@@ -261,9 +268,16 @@ public class AdminController : ControllerBase
     [HttpDelete("positions/{id}")]
     public async Task<IActionResult> DeletePosition(int id)
     {
-        var result = await _adminService.DeletePositionAsync(id);
-        if (!result) return BadRequest(new { message = "Cannot delete position that is assigned to users" });
-        return NoContent();
+        try
+        {
+            var result = await _adminService.DeletePositionAsync(id);
+            if (!result) return NotFound(new { message = "سمت سازمانی یافت نشد" });
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     private int GetCurrentUserId()
