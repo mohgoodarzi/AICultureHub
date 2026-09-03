@@ -4,12 +4,15 @@ using Microsoft.AspNetCore.Mvc;
 using AICultureHub.Application.Common.Models;
 using AICultureHub.Application.DTOs;
 using AICultureHub.Application.Interfaces;
+using AICultureHub.API.Attributes;
 
 namespace AICultureHub.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Administrator")]
+[Authorize]
+[RequireActiveUser]
+[RequireAdministrator]
 public class AdminController : ControllerBase
 {
     private readonly IAdminService _adminService;
@@ -83,6 +86,12 @@ public class AdminController : ControllerBase
     [HttpDelete("users/{id}/roles/{roleName}")]
     public async Task<IActionResult> RemoveRole(int id, string roleName)
     {
+        // Prevent an administrator from removing their own Administrator role (lockout prevention)
+        var currentUserId = GetCurrentUserId();
+        if (currentUserId == id && roleName == "Administrator")
+        {
+            return BadRequest(new { message = "Cannot remove your own Administrator role" });
+        }
         var result = await _adminService.RemoveRoleAsync(id, roleName);
         if (!result) return NotFound();
         return Ok(new { message = "Role removed" });

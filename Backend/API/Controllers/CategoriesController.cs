@@ -3,12 +3,15 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using AICultureHub.Application.DTOs;
 using AICultureHub.Application.Interfaces;
+using AICultureHub.API.Attributes;
 
 namespace AICultureHub.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Administrator")]
+[Authorize]
+[RequireActiveUser]
+[RequireAdministrator]
 public class CategoriesController : ControllerBase
 {
     private readonly ICategoryService _categoryService;

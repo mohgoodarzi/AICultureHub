@@ -51,6 +51,31 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = jwtIssuer,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret))
     };
+
+    // Reject tokens of deactivated or deleted users immediately (not just at token expiry)
+    options.Events = new JwtBearerEvents
+    {
+        OnTokenValidated = async context =>
+        {
+            var dbContext = context.HttpContext.RequestServices.GetRequiredService<ApplicationDbContext>();
+            var userIdClaim = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null || !int.TryParse(userIdClaim, out var userId))
+            {
+                context.Fail("Invalid token subject");
+                return;
+            }
+
+            var isActive = await dbContext.Users
+                .Where(u => u.Id == userId)
+                .Select(u => u.IsActive)
+                .FirstOrDefaultAsync();
+
+            if (!isActive)
+            {
+                context.Fail("User account is deactivated or no longer exists");
+            }
+        }
+    };
 });
 
 builder.Services.AddAuthorization();
@@ -113,6 +138,115 @@ using (var scope = app.Services.CreateScope())
     try
     {
         dbContext.Database.EnsureCreated();
+
+        // Idempotent permission sync: add any missing permission codes (handles schema evolution
+        // on databases created before the RBAC redesign, where old lowercase codes existed).
+        var rbacPermissions = new (string Name, string Code, string Module, string Description)[]
+        {
+            ("View Dashboard", "Dashboard.View", "Dashboard", "View dashboard"),
+            ("Manage Dashboard", "Dashboard.Manage", "Dashboard", "Manage dashboard settings"),
+            ("View Users", "Users.View", "Users", "View user list"),
+            ("Create Users", "Users.Create", "Users", "Create new users"),
+            ("Edit Users", "Users.Edit", "Users", "Edit user information"),
+            ("Delete Users", "Users.Delete", "Users", "Delete users"),
+            ("Manage Users", "Users.Manage", "Users", "Full user management"),
+            ("View Roles", "Roles.View", "Roles", "View role list"),
+            ("Create Roles", "Roles.Create", "Roles", "Create new roles"),
+            ("Edit Roles", "Roles.Edit", "Roles", "Edit role information"),
+            ("Delete Roles", "Roles.Delete", "Roles", "Delete roles"),
+            ("Manage Roles", "Roles.Manage", "Roles", "Full role management"),
+            ("View Articles", "Articles.View", "Articles", "View article list"),
+            ("Create Articles", "Articles.Create", "Articles", "Create new articles"),
+            ("Edit Articles", "Articles.Edit", "Articles", "Edit articles"),
+            ("Delete Articles", "Articles.Delete", "Articles", "Delete articles"),
+            ("Manage Articles", "Articles.Manage", "Articles", "Full article management"),
+            ("View Categories", "Categories.View", "Categories", "View category list"),
+            ("Create Categories", "Categories.Create", "Categories", "Create new categories"),
+            ("Edit Categories", "Categories.Edit", "Categories", "Edit categories"),
+            ("Delete Categories", "Categories.Delete", "Categories", "Delete categories"),
+            ("Manage Categories", "Categories.Manage", "Categories", "Full category management"),
+            ("View Courses", "Courses.View", "Courses", "View course list"),
+            ("Create Courses", "Courses.Create", "Courses", "Create new courses"),
+            ("Edit Courses", "Courses.Edit", "Courses", "Edit courses"),
+            ("Delete Courses", "Courses.Delete", "Courses", "Delete courses"),
+            ("Manage Courses", "Courses.Manage", "Courses", "Full course management"),
+            ("View Quizzes", "Quizzes.View", "Quizzes", "View quiz list"),
+            ("Create Quizzes", "Quizzes.Create", "Quizzes", "Create new quizzes"),
+            ("Edit Quizzes", "Quizzes.Edit", "Quizzes", "Edit quizzes"),
+            ("Delete Quizzes", "Quizzes.Delete", "Quizzes", "Delete quizzes"),
+            ("Manage Quizzes", "Quizzes.Manage", "Quizzes", "Full quiz management"),
+            ("View Challenges", "Challenges.View", "Challenges", "View challenge list"),
+            ("Create Challenges", "Challenges.Create", "Challenges", "Create new challenges"),
+            ("Edit Challenges", "Challenges.Edit", "Challenges", "Edit challenges"),
+            ("Delete Challenges", "Challenges.Delete", "Challenges", "Delete challenges"),
+            ("Manage Challenges", "Challenges.Manage", "Challenges", "Full challenge management"),
+            ("View Announcements", "Announcements.View", "Announcements", "View announcements"),
+            ("Create Announcements", "Announcements.Create", "Announcements", "Create announcements"),
+            ("Edit Announcements", "Announcements.Edit", "Announcements", "Edit announcements"),
+            ("Delete Announcements", "Announcements.Delete", "Announcements", "Delete announcements"),
+            ("Manage Announcements", "Announcements.Manage", "Announcements", "Full announcement management"),
+            ("View Reports", "Reports.View", "Reports", "View reports"),
+            ("Manage Reports", "Reports.Manage", "Reports", "Manage reports"),
+            ("View Settings", "Settings.View", "Settings", "View settings"),
+            ("Manage Settings", "Settings.Manage", "Settings", "Manage settings"),
+            ("View Glossary", "Glossary.View", "Glossary", "View glossary"),
+            ("Create Glossary", "Glossary.Create", "Glossary", "Create glossary entries"),
+            ("Edit Glossary", "Glossary.Edit", "Glossary", "Edit glossary entries"),
+            ("Delete Glossary", "Glossary.Delete", "Glossary", "Delete glossary entries"),
+            ("Manage Glossary", "Glossary.Manage", "Glossary", "Full glossary management"),
+        };
+
+        var existingPerms = dbContext.Permissions.ToList();
+        var existingByCode = new Dictionary<string, Permission>(StringComparer.OrdinalIgnoreCase);
+        foreach (var ep in existingPerms)
+        {
+            existingByCode[ep.Code] = ep;
+        }
+
+        // Normalize legacy lowercase codes (e.g. "users.view") to the canonical casing ("Users.View")
+        foreach (var def in rbacPermissions)
+        {
+            if (existingByCode.TryGetValue(def.Code, out var match) && match.Code != def.Code)
+            {
+                match.Code = def.Code;
+                match.Name = def.Name;
+                match.Module = def.Module;
+                match.Description = def.Description;
+            }
+        }
+        dbContext.SaveChanges();
+
+        var newPerms = rbacPermissions
+            .Where(p => !existingByCode.ContainsKey(p.Code))
+            .Select(p => new Permission { Name = p.Name, Code = p.Code, Module = p.Module, Description = p.Description, IsActive = true, CreatedDate = DateTime.UtcNow })
+            .ToList();
+        if (newPerms.Any())
+        {
+            dbContext.Permissions.AddRange(newPerms);
+            dbContext.SaveChanges();
+            Console.WriteLine($"Seeded {newPerms.Count} new permissions.");
+        }
+
+        // Refresh lookup with any newly inserted rows
+        existingByCode = dbContext.Permissions.ToDictionary(p => p.Code, p => p, StringComparer.OrdinalIgnoreCase);
+
+        // Ensure the Administrator role always has every permission (self-healing for role-permission drift)
+        var adminRoleSync = dbContext.Roles.Include(r => r.RolePermissions).FirstOrDefault(r => r.Name == "Administrator");
+        if (adminRoleSync != null)
+        {
+            var allPermIds = existingByCode.Values.Where(p => p.IsActive).Select(p => p.Id).ToList();
+            var adminOwned = adminRoleSync.RolePermissions.Select(rp => rp.PermissionId).ToHashSet();
+            var missing = allPermIds.Where(id => !adminOwned.Contains(id)).ToList();
+            if (missing.Any())
+            {
+                foreach (var pid in missing)
+                {
+                    dbContext.RolePermissions.Add(new RolePermission { RoleId = adminRoleSync.Id, PermissionId = pid });
+                }
+                dbContext.SaveChanges();
+                Console.WriteLine($"Granted {missing.Count} missing permissions to Administrator role.");
+            }
+        }
 
         if (!dbContext.Permissions.Any())
         {

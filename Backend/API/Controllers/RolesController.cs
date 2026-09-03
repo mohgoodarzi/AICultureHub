@@ -3,12 +3,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using AICultureHub.Application.DTOs;
 using AICultureHub.Application.Interfaces;
+using AICultureHub.API.Attributes;
 
 namespace AICultureHub.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
+[RequireActiveUser]
 public class RolesController : ControllerBase
 {
     private readonly IAdminService _adminService;
@@ -26,7 +28,16 @@ public class RolesController : ControllerBase
         return claim != null ? int.Parse(claim.Value) : null;
     }
 
+    private async Task<bool> HasPermissionAsync(string permission)
+    {
+        var userId = GetCurrentUserId();
+        if (userId == null) return false;
+        var perms = await _adminService.GetUserPermissionsAsync(userId.Value);
+        return perms.Permissions.Contains(permission);
+    }
+
     [HttpGet]
+    [RequirePermission(Permissions.Roles_View)]
     public async Task<IActionResult> GetRoles()
     {
         var roles = await _adminService.GetRolesAsync();
@@ -34,6 +45,7 @@ public class RolesController : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [RequirePermission(Permissions.Roles_View)]
     public async Task<IActionResult> GetRole(int id)
     {
         var role = await _adminService.GetRoleByIdAsync(id);
@@ -42,6 +54,7 @@ public class RolesController : ControllerBase
     }
 
     [HttpPost]
+    [RequirePermission(Permissions.Roles_Create)]
     public async Task<IActionResult> CreateRole([FromBody] CreateRoleRequest request)
     {
         try
@@ -58,6 +71,7 @@ public class RolesController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [RequirePermission(Permissions.Roles_Edit)]
     public async Task<IActionResult> UpdateRole(int id, [FromBody] UpdateRoleRequest request)
     {
         try
@@ -75,6 +89,7 @@ public class RolesController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [RequirePermission(Permissions.Roles_Delete)]
     public async Task<IActionResult> DeleteRole(int id)
     {
         try
@@ -90,6 +105,7 @@ public class RolesController : ControllerBase
     }
 
     [HttpGet("permissions")]
+    [RequirePermission(Permissions.Roles_View)]
     public async Task<IActionResult> GetPermissions()
     {
         var permissions = await _adminService.GetPermissionsAsync();
@@ -97,6 +113,7 @@ public class RolesController : ControllerBase
     }
 
     [HttpGet("permissions/grouped")]
+    [RequirePermission(Permissions.Roles_View)]
     public async Task<IActionResult> GetPermissionsGrouped()
     {
         var permissions = await _adminService.GetPermissionsGroupedByModuleAsync();
@@ -106,6 +123,13 @@ public class RolesController : ControllerBase
     [HttpGet("user/{userId}/permissions")]
     public async Task<IActionResult> GetUserPermissions(int userId)
     {
+        // Users may always read their own permissions (needed by the SPA at login).
+        // Reading another user's permissions requires Roles.View.
+        var currentUserId = GetCurrentUserId();
+        if (currentUserId != userId && !await HasPermissionAsync(Permissions.Roles_View))
+        {
+            return Forbid();
+        }
         var permissions = await _adminService.GetUserPermissionsAsync(userId);
         return Ok(permissions);
     }
@@ -113,11 +137,17 @@ public class RolesController : ControllerBase
     [HttpGet("user/{userId}/roles")]
     public async Task<IActionResult> GetUserRoles(int userId)
     {
+        var currentUserId = GetCurrentUserId();
+        if (currentUserId != userId && !await HasPermissionAsync(Permissions.Roles_View))
+        {
+            return Forbid();
+        }
         var roles = await _adminService.GetUserRoleAssignmentsAsync(userId);
         return Ok(roles);
     }
 
     [HttpPost("assign")]
+    [RequirePermission(Permissions.Users_Manage)]
     public async Task<IActionResult> AssignRoleToUser([FromBody] AssignRoleRequest request)
     {
         var userId = GetCurrentUserId();
@@ -128,6 +158,7 @@ public class RolesController : ControllerBase
     }
 
     [HttpDelete("user/{userId}/role/{roleId}")]
+    [RequirePermission(Permissions.Users_Manage)]
     public async Task<IActionResult> RemoveRoleFromUser(int userId, int roleId)
     {
         var result = await _adminService.RemoveRoleFromUserAsync(userId, roleId);

@@ -1,10 +1,13 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using AICultureHub.API.Attributes;
 
 namespace AICultureHub.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
+[RequireActiveUser]
 public class UploadController : ControllerBase
 {
     private readonly IWebHostEnvironment _env;
@@ -17,21 +20,21 @@ public class UploadController : ControllerBase
         _env = env;
     }
 
-    [Authorize]
+    [RequirePermission(Permissions.Articles_Edit)]
     [HttpPost("image")]
     public async Task<IActionResult> UploadImage(IFormFile file)
     {
         return await UploadFile(file, "images", _allowedImageExtensions);
     }
 
-    [Authorize]
+    [RequirePermission(Permissions.Articles_Edit)]
     [HttpPost("video")]
     public async Task<IActionResult> UploadVideo(IFormFile file)
     {
         return await UploadFile(file, "videos", _allowedVideoExtensions);
     }
 
-    [Authorize]
+    [RequirePermission(Permissions.Articles_Edit)]
     [HttpPost("file")]
     public async Task<IActionResult> UploadFile(IFormFile file)
     {

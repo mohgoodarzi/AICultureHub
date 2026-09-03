@@ -6,7 +6,7 @@ using AICultureHub.Application.Interfaces;
 namespace AICultureHub.API.Attributes;
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true)]
-public class RequirePermissionAttribute : Attribute, IAuthorizationFilter
+public class RequirePermissionAttribute : Attribute, IAsyncAuthorizationFilter
 {
     private readonly string _permission;
 
@@ -15,22 +15,16 @@ public class RequirePermissionAttribute : Attribute, IAuthorizationFilter
         _permission = permission;
     }
 
-    public void OnAuthorization(AuthorizationFilterContext context)
+    public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
     {
-        if (!context.HttpContext.User.Identity?.IsAuthenticated ?? true)
+        if (context.HttpContext.User.Identity?.IsAuthenticated != true)
         {
             context.Result = new UnauthorizedResult();
             return;
         }
 
         var userIdClaim = context.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier);
-        if (userIdClaim == null)
-        {
-            context.Result = new UnauthorizedResult();
-            return;
-        }
-
-        if (!int.TryParse(userIdClaim.Value, out var userId))
+        if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
         {
             context.Result = new UnauthorizedResult();
             return;
@@ -45,10 +39,7 @@ public class RequirePermissionAttribute : Attribute, IAuthorizationFilter
 
         try
         {
-            var task = adminService.GetUserPermissionsAsync(userId);
-            task.Wait();
-            var permissions = task.Result;
-
+            var permissions = await adminService.GetUserPermissionsAsync(userId);
             if (!permissions.Permissions.Contains(_permission))
             {
                 context.Result = new ForbidResult();

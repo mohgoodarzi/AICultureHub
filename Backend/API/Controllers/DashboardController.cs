@@ -3,12 +3,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using AICultureHub.Application.DTOs;
 using AICultureHub.Application.Interfaces;
+using AICultureHub.API.Attributes;
 
 namespace AICultureHub.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
+[RequireActiveUser]
 public class DashboardController : ControllerBase
 {
     private readonly IGamificationService _gamificationService;

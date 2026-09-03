@@ -4,11 +4,14 @@ using Microsoft.AspNetCore.Mvc;
 using AICultureHub.Application.Common.Models;
 using AICultureHub.Application.DTOs;
 using AICultureHub.Application.Interfaces;
+using AICultureHub.API.Attributes;
 
 namespace AICultureHub.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
+[RequireActiveUser]
 public class QuizzesController : ControllerBase
 {
     private readonly IQuizService _quizService;

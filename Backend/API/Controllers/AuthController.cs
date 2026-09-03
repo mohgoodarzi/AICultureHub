@@ -29,9 +29,9 @@ public class AuthController : ControllerBase
         {
             return Unauthorized(new { message = ex.Message });
         }
-        catch (Exception ex)
+        catch
         {
-            return StatusCode(500, new { message = ex.Message, stackTrace = ex.StackTrace });
+            return StatusCode(500, new { message = "An error occurred during login." });
         }
     }
 
