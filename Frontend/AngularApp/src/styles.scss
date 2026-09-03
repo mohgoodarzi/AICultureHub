@@ -4,29 +4,29 @@
    ============================================================ */
 
 :root {
-  /* Fallback palette (overridden at runtime by ThemeService) */
-  --theme-primary: #7c3aed;
-  --theme-primary-light: #a78bfa;
-  --theme-primary-dark: #5b21b6;
-  --theme-secondary: #06b6d4;
-  --theme-secondary-light: #67e8f9;
-  --theme-accent: #f472b6;
-  --theme-background: #f5f6fb;
+  /* Fallback palette = corporate logo identity (overridden at runtime by ThemeService) */
+  --theme-primary: #c94a30;
+  --theme-primary-light: #e8846b;
+  --theme-primary-dark: #8f2f1c;
+  --theme-secondary: #0f7ea8;
+  --theme-secondary-light: #5fb6d6;
+  --theme-accent: #0b8a66;
+  --theme-background: #f7f5f3;
   --theme-surface: #ffffff;
-  --theme-surface-hover: #f3f0fc;
-  --theme-text: #1e1b33;
-  --theme-text-secondary: #4c4a68;
-  --theme-text-muted: #8b89a6;
-  --theme-border: #e5e1f5;
-  --theme-success: #10b981;
-  --theme-warning: #f59e0b;
-  --theme-error: #ef4444;
-  --theme-sidebar-bg: linear-gradient(180deg, #17123a 0%, #241b52 55%, #2d1b69 100%);
-  --theme-sidebar-gradient: #17123a;
-  --theme-sidebar-text: #ece9fb;
-  --theme-sidebar-text-muted: #9f9ace;
-  --theme-card-shadow: 0 8px 28px rgba(84, 45, 162, 0.12);
-  --theme-avatar-gradient: linear-gradient(135deg, #7c3aed, #06b6d4);
+  --theme-surface-hover: #faf4f1;
+  --theme-text: #2b211d;
+  --theme-text-secondary: #5c4f49;
+  --theme-text-muted: #94877f;
+  --theme-border: #ecdcd4;
+  --theme-success: #0f8a5f;
+  --theme-warning: #d98324;
+  --theme-error: #c0392b;
+  --theme-sidebar-bg: linear-gradient(180deg, #31160e 0%, #451f12 55%, #4e2415 100%);
+  --theme-sidebar-gradient: #31160e;
+  --theme-sidebar-text: #f6e9e3;
+  --theme-sidebar-text-muted: #c69e8d;
+  --theme-card-shadow: 0 8px 28px rgba(143, 47, 28, 0.13);
+  --theme-avatar-gradient: linear-gradient(135deg, #c94a30, #0f7ea8);
 
   /* Fixed design tokens (theme-independent) */
   --gradient-brand: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-secondary) 100%);

@@ -36,6 +36,36 @@ export class ThemeService {
 
   private themes: ColorTheme[] = [
     {
+      // Company logo palette: vermilion #F04F24, blue #008CBF, teal-green #00965E
+      // Muted/balanced for a premium corporate+AI identity; default theme.
+      name: 'corporate',
+      displayName: 'هویت سازمانی (لوگو)',
+      colors: {
+        primary: '#c94a30',          // muted vermilion (logo orange, darkened & desaturated)
+        primaryLight: '#e8846b',     // soft vermilion tint
+        primaryDark: '#8f2f1c',      // deep brick
+        secondary: '#0f7ea8',        // corporate blue (logo blue, slightly deepened)
+        secondaryLight: '#5fb6d6',   // soft sky tint
+        accent: '#0b8a66',           // corporate teal-green (muted)
+        background: '#f7f5f3',       // warm paper
+        surface: '#ffffff',
+        surfaceHover: '#faf4f1',     // warm vermilion-tinted hover
+        text: '#2b211d',             // warm charcoal
+        textSecondary: '#5c4f49',
+        textMuted: '#94877f',
+        border: '#ecdcd4',           // warm border
+        success: '#0f8a5f',          // harmonized with logo teal
+        warning: '#d98324',          // muted amber (harmonizes with vermilion)
+        error: '#c0392b',            // brick red instead of neon red
+        sidebarBg: 'linear-gradient(180deg, #31160e 0%, #451f12 55%, #4e2415 100%)',
+        sidebarGradient: '#31160e',
+        sidebarText: '#f6e9e3',
+        sidebarTextMuted: '#c69e8d',
+        cardShadow: '0 8px 28px rgba(143, 47, 28, 0.13)',
+        avatarGradient: 'linear-gradient(135deg, #c94a30, #0f7ea8)' // vermilion → corporate blue
+      }
+    },
+    {
       name: 'neural',
       displayName: 'بنفش عصبی',
       colors: {
@@ -67,84 +97,84 @@ export class ThemeService {
       name: 'quantum',
       displayName: 'آبی کوانتوم',
       colors: {
-        primary: '#2563eb',
-        primaryLight: '#60a5fa',
-        primaryDark: '#1e3a8a',
-        secondary: '#0ea5e9',
-        secondaryLight: '#7dd3fc',
-        accent: '#8b5cf6',
-        background: '#f4f7fd',
+        primary: '#0f7ea8',          // corporate blue from logo
+        primaryLight: '#5fb6d6',
+        primaryDark: '#0a5572',
+        secondary: '#0b8a66',        // logo teal as secondary
+        secondaryLight: '#5fc4a4',
+        accent: '#c94a30',           // logo vermilion as accent (muted)
+        background: '#f3f8fa',
         surface: '#ffffff',
-        surfaceHover: '#eff4fd',
-        text: '#131c31',
-        textSecondary: '#44506b',
-        textMuted: '#7e8aa5',
-        border: '#dbe4f6',
+        surfaceHover: '#ecf5f8',
+        text: '#122430',
+        textSecondary: '#3d5560',
+        textMuted: '#748c97',
+        border: '#d8e9ef',
         success: '#10b981',
         warning: '#f59e0b',
         error: '#ef4444',
-        sidebarBg: 'linear-gradient(180deg, #0b1739 0%, #12235a 55%, #16295e 100%)',
-        sidebarGradient: '#0b1739',
-        sidebarText: '#e3ecfd',
-        sidebarTextMuted: '#8ba0cc',
-        cardShadow: '0 8px 28px rgba(28, 56, 130, 0.12)',
-        avatarGradient: 'linear-gradient(135deg, #2563eb, #0ea5e9)'
+        sidebarBg: 'linear-gradient(180deg, #08222e 0%, #0d3346 55%, #103c52 100%)',
+        sidebarGradient: '#08222e',
+        sidebarText: '#e2f1f8',
+        sidebarTextMuted: '#8fb2c2',
+        cardShadow: '0 8px 28px rgba(15, 90, 125, 0.12)',
+        avatarGradient: 'linear-gradient(135deg, #0f7ea8, #0b8a66)'
       }
     },
     {
       name: 'cyber',
       displayName: 'فیروزه سایبری',
       colors: {
-        primary: '#0d9488',
-        primaryLight: '#2dd4bf',
-        primaryDark: '#115e59',
-        secondary: '#6366f1',
-        secondaryLight: '#a5b4fc',
-        accent: '#f59e0b',
-        background: '#f2faf8',
+        primary: '#0b8a66',          // logo teal-green, deepened
+        primaryLight: '#3fbf95',
+        primaryDark: '#075c44',
+        secondary: '#0f7ea8',        // logo blue
+        secondaryLight: '#5fb6d6',
+        accent: '#c94a30',           // logo vermilion as warm accent
+        background: '#f2faf7',
         surface: '#ffffff',
-        surfaceHover: '#ebf7f4',
-        text: '#12312e',
-        textSecondary: '#3d5551',
-        textMuted: '#6f8f8a',
-        border: '#d3ece7',
+        surfaceHover: '#e9f6f1',
+        text: '#12312b',
+        textSecondary: '#3d554e',
+        textMuted: '#6f8f87',
+        border: '#d3ece3',
         success: '#16a34a',
-        warning: '#f59e0b',
+        warning: '#d98324',
         error: '#ef4444',
-        sidebarBg: 'linear-gradient(180deg, #062926 0%, #0b3f39 55%, #0d4a42 100%)',
-        sidebarGradient: '#062926',
-        sidebarText: '#dcf5f0',
-        sidebarTextMuted: '#7fb0a8',
-        cardShadow: '0 8px 28px rgba(10, 90, 80, 0.12)',
-        avatarGradient: 'linear-gradient(135deg, #0d9488, #6366f1)'
+        sidebarBg: 'linear-gradient(180deg, #062922 0%, #0b4032 55%, #0d4c3b 100%)',
+        sidebarGradient: '#062922',
+        sidebarText: '#dcf5ec',
+        sidebarTextMuted: '#7fb0a1',
+        cardShadow: '0 8px 28px rgba(10, 90, 66, 0.12)',
+        avatarGradient: 'linear-gradient(135deg, #0b8a66, #0f7ea8)'
       }
     },
     {
       name: 'midnight',
       displayName: 'نیمه‌شب رویایی',
       colors: {
-        primary: '#ec4899',
-        primaryLight: '#f9a8d4',
-        primaryDark: '#9d174d',
-        secondary: '#8b5cf6',
-        secondaryLight: '#c4b5fd',
-        accent: '#06b6d4',
-        background: '#faf5f9',
+        primary: '#b03a6b',          // muted rose (harmonizes with logo vermilion family)
+        primaryLight: '#e08cae',
+        primaryDark: '#7c2148',
+        secondary: '#0f7ea8',        // corporate blue anchor from logo
+        secondaryLight: '#7cc0dc',
+        accent: '#c94a30',           // vermilion echo
+        background: '#faf5f7',
         surface: '#ffffff',
-        surfaceHover: '#fbf0f7',
-        text: '#331227',
-        textSecondary: '#6b3a58',
-        textMuted: '#a97e96',
-        border: '#f6ddec',
+        surfaceHover: '#f9eef3',
+        text: '#331722',
+        textSecondary: '#6b3a4d',
+        textMuted: '#a97e8f',
+        border: '#f3dce6',
         success: '#10b981',
-        warning: '#f59e0b',
+        warning: '#d98324',
         error: '#ef4444',
-        sidebarBg: 'linear-gradient(180deg, #2d0a2e 0%, #471048 55%, #55124f 100%)',
-        sidebarGradient: '#2d0a2e',
-        sidebarText: '#fce9f5',
-        sidebarTextMuted: '#c48fb4',
-        cardShadow: '0 8px 28px rgba(120, 30, 90, 0.12)',
-        avatarGradient: 'linear-gradient(135deg, #ec4899, #8b5cf6)'
+        sidebarBg: 'linear-gradient(180deg, #2e0e1c 0%, #471229 55%, #521531 100%)',
+        sidebarGradient: '#2e0e1c',
+        sidebarText: '#fbe9f1',
+        sidebarTextMuted: '#c48fa5',
+        cardShadow: '0 8px 28px rgba(124, 33, 72, 0.12)',
+        avatarGradient: 'linear-gradient(135deg, #b03a6b, #0f7ea8)'
       }
     }
   ];

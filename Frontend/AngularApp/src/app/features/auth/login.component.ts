@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild, AfterViewInit, OnDestroy, NgZone } from '@angular/core';
+﻿import { Component, ElementRef, ViewChild, AfterViewInit, OnDestroy, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -36,13 +36,13 @@ interface DataPacket {
       <div class="login-shell">
         <!-- Brand hero panel -->
         <div class="brand-panel">
-          <div class="brand-chip">✦ سامانه هوش مصنوعی سازمانی</div>
-          <h2>با هم،<br>سازمانی هوشمندتر می‌سازیم</h2>
-          <p>پلتفرم ترویج فرهنگ هوش مصنوعی و تحول دیجیتال — آموزش، مقالات، آزمون و رقابت در یک تجربهٔ یکپارچه.</p>
+          <div class="brand-chip">âœ¦ Ø³Ø§Ù…Ø§Ù†Ù‡ Ù‡ÙˆØ´ Ù…ØµÙ†ÙˆØ¹ÛŒ Ø³Ø§Ø²Ù…Ø§Ù†ÛŒ</div>
+          <h2>Ø¨Ø§ Ù‡Ù…ØŒ<br>Ø³Ø§Ø²Ù…Ø§Ù†ÛŒ Ù‡ÙˆØ´Ù…Ù†Ø¯ØªØ± Ù…ÛŒâ€ŒØ³Ø§Ø²ÛŒÙ…</h2>
+          <p>Ù¾Ù„ØªÙØ±Ù… ØªØ±ÙˆÛŒØ¬ ÙØ±Ù‡Ù†Ú¯ Ù‡ÙˆØ´ Ù…ØµÙ†ÙˆØ¹ÛŒ Ùˆ ØªØ­ÙˆÙ„ Ø¯ÛŒØ¬ÛŒØªØ§Ù„ â€” Ø¢Ù…ÙˆØ²Ø´ØŒ Ù…Ù‚Ø§Ù„Ø§ØªØŒ Ø¢Ø²Ù…ÙˆÙ† Ùˆ Ø±Ù‚Ø§Ø¨Øª Ø¯Ø± ÛŒÚ© ØªØ¬Ø±Ø¨Ù‡Ù” ÛŒÚ©Ù¾Ø§Ø±Ú†Ù‡.</p>
           <div class="brand-features">
-            <div class="feature-row"><span class="feature-dot">◆</span> یادگیری شخصی‌سازی‌شده با مسیر امتیاز</div>
-            <div class="feature-row"><span class="feature-dot">◆</span> مقالات و دوره‌های به‌روز AI</div>
-            <div class="feature-row"><span class="feature-dot">◆</span> آزمون‌ها و جدول امتیازات رقابتی</div>
+            <div class="feature-row"><span class="feature-dot">â—†</span> ÛŒØ§Ø¯Ú¯ÛŒØ±ÛŒ Ø´Ø®ØµÛŒâ€ŒØ³Ø§Ø²ÛŒâ€ŒØ´Ø¯Ù‡ Ø¨Ø§ Ù…Ø³ÛŒØ± Ø§Ù…ØªÛŒØ§Ø²</div>
+            <div class="feature-row"><span class="feature-dot">â—†</span> Ù…Ù‚Ø§Ù„Ø§Øª Ùˆ Ø¯ÙˆØ±Ù‡â€ŒÙ‡Ø§ÛŒ Ø¨Ù‡â€ŒØ±ÙˆØ² AI</div>
+            <div class="feature-row"><span class="feature-dot">â—†</span> Ø¢Ø²Ù…ÙˆÙ†â€ŒÙ‡Ø§ Ùˆ Ø¬Ø¯ÙˆÙ„ Ø§Ù…ØªÛŒØ§Ø²Ø§Øª Ø±Ù‚Ø§Ø¨ØªÛŒ</div>
           </div>
           <div class="brand-ring r1"></div>
           <div class="brand-ring r2"></div>
@@ -59,27 +59,27 @@ interface DataPacket {
           </div>
 
           <div class="login-header">
-            <img src="assets/logo.png" alt="شرکت طراحی و ساختمان نفت" class="login-logo">
-            <h1>شرکت طراحی و ساختمان نفت</h1>
-            <p>برای ادامه وارد حساب خود شوید</p>
+            <img src="assets/logo.png" alt="Ø´Ø±Ú©Øª Ø·Ø±Ø§Ø­ÛŒ Ùˆ Ø³Ø§Ø®ØªÙ…Ø§Ù† Ù†ÙØª" class="login-logo">
+            <h1>Ø´Ø±Ú©Øª Ø·Ø±Ø§Ø­ÛŒ Ùˆ Ø³Ø§Ø®ØªÙ…Ø§Ù† Ù†ÙØª</h1>
+            <p>Ø¨Ø±Ø§ÛŒ Ø§Ø¯Ø§Ù…Ù‡ ÙˆØ§Ø±Ø¯ Ø­Ø³Ø§Ø¨ Ø®ÙˆØ¯ Ø´ÙˆÛŒØ¯</p>
           </div>
           <form (ngSubmit)="onSubmit()" #loginForm="ngForm">
             <div class="form-group">
-              <label for="username">نام کاربری</label>
-              <input type="text" id="username" name="username" [(ngModel)]="credentials.username" required placeholder="نام کاربری خود را وارد کنید" autocomplete="username">
+              <label for="username">Ù†Ø§Ù… Ú©Ø§Ø±Ø¨Ø±ÛŒ</label>
+              <input type="text" id="username" name="username" [(ngModel)]="credentials.username" required placeholder="Ù†Ø§Ù… Ú©Ø§Ø±Ø¨Ø±ÛŒ Ø®ÙˆØ¯ Ø±Ø§ ÙˆØ§Ø±Ø¯ Ú©Ù†ÛŒØ¯" autocomplete="username">
             </div>
             <div class="form-group">
-              <label for="password">رمز عبور</label>
-              <input type="password" id="password" name="password" [(ngModel)]="credentials.password" required placeholder="رمز عبور خود را وارد کنید" autocomplete="current-password">
+              <label for="password">Ø±Ù…Ø² Ø¹Ø¨ÙˆØ±</label>
+              <input type="password" id="password" name="password" [(ngModel)]="credentials.password" required placeholder="Ø±Ù…Ø² Ø¹Ø¨ÙˆØ± Ø®ÙˆØ¯ Ø±Ø§ ÙˆØ§Ø±Ø¯ Ú©Ù†ÛŒØ¯" autocomplete="current-password">
             </div>
             <div class="error-message" *ngIf="errorMessage">{{ errorMessage }}</div>
             <button type="submit" class="btn-primary btn-submit" [disabled]="isLoading">
               <span *ngIf="isLoading" class="spinner"></span>
-              {{ isLoading ? 'در حال ورود...' : 'ورود به سیستم' }}
+              {{ isLoading ? 'Ø¯Ø± Ø­Ø§Ù„ ÙˆØ±ÙˆØ¯...' : 'ÙˆØ±ÙˆØ¯ Ø¨Ù‡ Ø³ÛŒØ³ØªÙ…' }}
             </button>
           </form>
           <div class="login-footer">
-            <p>حساب کاربری ندارید؟ <a routerLink="/register">ثبت‌نام کنید</a></p>
+            <p>Ø­Ø³Ø§Ø¨ Ú©Ø§Ø±Ø¨Ø±ÛŒ Ù†Ø¯Ø§Ø±ÛŒØ¯ØŸ <a routerLink="/register">Ø«Ø¨Øªâ€ŒÙ†Ø§Ù… Ú©Ù†ÛŒØ¯</a></p>
           </div>
         </div>
       </div>
@@ -225,20 +225,20 @@ interface DataPacket {
       display: flex;
       flex-direction: column;
       justify-content: center;
-      background: linear-gradient(150deg, #1e1b4b 0%, #4c1d95 45%, #1e3a8a 100%);
+      background: linear-gradient(150deg, #2c120a 0%, #451f12 45%, #0a3a4d 100%);
     }
 
-    /* ===== Animated flowing color mesh — clearly visible, stays inside the form ===== */
+    /* ===== Animated flowing color mesh â€” clearly visible, stays inside the form ===== */
     .login-card::before {
       content: '';
       position: absolute;
       inset: -55%;
       z-index: -1;
       background:
-        radial-gradient(38% 34% at 24% 28%, rgba(236, 72, 153, 0.62), transparent 68%),
-        radial-gradient(42% 38% at 72% 22%, rgba(124, 58, 237, 0.60), transparent 68%),
-        radial-gradient(40% 40% at 78% 72%, rgba(59, 130, 246, 0.58), transparent 68%),
-        radial-gradient(36% 36% at 26% 76%, rgba(6, 182, 212, 0.55), transparent 68%);
+        radial-gradient(38% 34% at 24% 28%, rgba(240, 79, 36, 0.50), transparent 68%),
+        radial-gradient(42% 38% at 72% 22%, rgba(201, 74, 48, 0.55), transparent 68%),
+        radial-gradient(40% 40% at 78% 72%, rgba(15, 126, 168, 0.58), transparent 68%),
+        radial-gradient(36% 36% at 26% 76%, rgba(11, 138, 102, 0.52), transparent 68%);
       animation: colorFlow 16s ease-in-out infinite alternate;
       will-change: transform;
     }
@@ -250,9 +250,9 @@ interface DataPacket {
       inset: -50%;
       z-index: -1;
       background:
-        radial-gradient(30% 30% at 50% 50%, rgba(168, 85, 247, 0.45), transparent 70%),
-        radial-gradient(26% 26% at 70% 40%, rgba(236, 72, 153, 0.35), transparent 70%),
-        radial-gradient(24% 24% at 30% 60%, rgba(59, 130, 246, 0.38), transparent 70%);
+        radial-gradient(30% 30% at 50% 50%, rgba(217, 131, 36, 0.42), transparent 70%),
+        radial-gradient(26% 26% at 70% 40%, rgba(240, 79, 36, 0.35), transparent 70%),
+        radial-gradient(24% 24% at 30% 60%, rgba(95, 182, 214, 0.40), transparent 70%);
       animation: colorBlend 11s ease-in-out infinite alternate-reverse;
       will-change: transform;
     }
@@ -297,8 +297,8 @@ interface DataPacket {
       font-size: 0.7rem;
       font-weight: 800;
       letter-spacing: 0.22em;
-      color: rgba(199, 210, 254, 0.5);
-      text-shadow: 0 0 12px rgba(129, 140, 248, 0.8);
+      color: rgba(246, 214, 200, 0.5);
+      text-shadow: 0 0 12px rgba(232, 132, 107, 0.8);
       white-space: nowrap;
       animation: wordDrift 9s ease-in-out infinite alternate;
       will-change: transform, opacity;
@@ -377,7 +377,7 @@ interface DataPacket {
     }
     .btn-submit:hover:not(:disabled) {
       transform: translateY(-2px);
-      box-shadow: 0 12px 32px rgba(0,0,0,0.45), 0 0 24px rgba(236,72,153,0.5);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.45), 0 0 24px rgba(240, 79, 36, 0.45);
     }
     .btn-submit:disabled { opacity: 0.75; cursor: not-allowed; }
 
@@ -522,7 +522,7 @@ export class LoginComponent implements AfterViewInit, OnDestroy {
         const d2 = dx * dx + dy * dy;
         if (d2 > maxDist * maxDist) continue;
         const alpha = (1 - Math.sqrt(d2) / maxDist) * 0.5;
-        ctx.strokeStyle = `rgba(165, 180, 252, ${alpha})`;
+        ctx.strokeStyle = `rgba(232, 190, 172, ${alpha})`;
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(a.x, a.y);
@@ -543,7 +543,7 @@ export class LoginComponent implements AfterViewInit, OnDestroy {
         if (d < bestD && d <= maxDist * maxDist) { bestD = d; best = k; }
       }
       if (best >= 0) {
-        this.packets.push({ fromIdx, toIdx: best, t: 0, speed: 0.012 + Math.random() * 0.02, hue: [190, 265, 320][Math.floor(Math.random() * 3)] });
+        this.packets.push({ fromIdx, toIdx: best, t: 0, speed: 0.012 + Math.random() * 0.02, hue: [12, 28, 196, 164][Math.floor(Math.random() * 3)] });
       }
     }
 
@@ -581,8 +581,8 @@ export class LoginComponent implements AfterViewInit, OnDestroy {
     // --- Draw pulsing neural nodes ---
     for (const n of this.nodes) {
       const glow = 0.55 + Math.sin(n.pulse) * 0.35;
-      ctx.fillStyle = `rgba(199, 210, 254, ${glow})`;
-      ctx.shadowColor = 'rgba(129, 140, 248, 0.9)';
+      ctx.fillStyle = `rgba(246, 214, 200, ${glow})`;
+      ctx.shadowColor = 'rgba(232, 132, 107, 0.9)';
       ctx.shadowBlur = 6 + glow * 6;
       ctx.beginPath();
       ctx.arc(n.x, n.y, n.radius, 0, Math.PI * 2);
@@ -596,7 +596,8 @@ export class LoginComponent implements AfterViewInit, OnDestroy {
     this.errorMessage = '';
     this.authService.login(this.credentials).subscribe({
       next: () => { this.router.navigate(['/dashboard']); },
-      error: (err) => { this.errorMessage = err.error?.message || 'نام کاربری یا رمز عبور اشتباه است'; this.isLoading = false; }
+      error: (err) => { this.errorMessage = err.error?.message || 'Ù†Ø§Ù… Ú©Ø§Ø±Ø¨Ø±ÛŒ ÛŒØ§ Ø±Ù…Ø² Ø¹Ø¨ÙˆØ± Ø§Ø´ØªØ¨Ø§Ù‡ Ø§Ø³Øª'; this.isLoading = false; }
     });
   }
 }
+
