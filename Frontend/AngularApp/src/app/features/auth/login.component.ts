@@ -1,4 +1,4 @@
-﻿import { Component, ElementRef, ViewChild, AfterViewInit, OnDestroy, NgZone } from '@angular/core';
+import { Component, ElementRef, ViewChild, AfterViewInit, OnDestroy, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -36,13 +36,13 @@ interface DataPacket {
       <div class="login-shell">
         <!-- Brand hero panel -->
         <div class="brand-panel">
-          <div class="brand-chip">âœ¦ Ø³Ø§Ù…Ø§Ù†Ù‡ Ù‡ÙˆØ´ Ù…ØµÙ†ÙˆØ¹ÛŒ Ø³Ø§Ø²Ù…Ø§Ù†ÛŒ</div>
-          <h2>Ø¨Ø§ Ù‡Ù…ØŒ<br>Ø³Ø§Ø²Ù…Ø§Ù†ÛŒ Ù‡ÙˆØ´Ù…Ù†Ø¯ØªØ± Ù…ÛŒâ€ŒØ³Ø§Ø²ÛŒÙ…</h2>
-          <p>Ù¾Ù„ØªÙØ±Ù… ØªØ±ÙˆÛŒØ¬ ÙØ±Ù‡Ù†Ú¯ Ù‡ÙˆØ´ Ù…ØµÙ†ÙˆØ¹ÛŒ Ùˆ ØªØ­ÙˆÙ„ Ø¯ÛŒØ¬ÛŒØªØ§Ù„ â€” Ø¢Ù…ÙˆØ²Ø´ØŒ Ù…Ù‚Ø§Ù„Ø§ØªØŒ Ø¢Ø²Ù…ÙˆÙ† Ùˆ Ø±Ù‚Ø§Ø¨Øª Ø¯Ø± ÛŒÚ© ØªØ¬Ø±Ø¨Ù‡Ù” ÛŒÚ©Ù¾Ø§Ø±Ú†Ù‡.</p>
+          <div class="brand-chip">✦ سامانه هوش مصنوعی سازمانی</div>
+          <h2>با هم،<br>سازمانی هوشمندتر می‌سازیم</h2>
+          <p>پلتفرم ترویج فرهنگ هوش مصنوعی و تحول دیجیتال — آموزش، مقالات، آزمون و رقابت در یک تجربهٔ یکپارچه.</p>
           <div class="brand-features">
-            <div class="feature-row"><span class="feature-dot">â—†</span> ÛŒØ§Ø¯Ú¯ÛŒØ±ÛŒ Ø´Ø®ØµÛŒâ€ŒØ³Ø§Ø²ÛŒâ€ŒØ´Ø¯Ù‡ Ø¨Ø§ Ù…Ø³ÛŒØ± Ø§Ù…ØªÛŒØ§Ø²</div>
-            <div class="feature-row"><span class="feature-dot">â—†</span> Ù…Ù‚Ø§Ù„Ø§Øª Ùˆ Ø¯ÙˆØ±Ù‡â€ŒÙ‡Ø§ÛŒ Ø¨Ù‡â€ŒØ±ÙˆØ² AI</div>
-            <div class="feature-row"><span class="feature-dot">â—†</span> Ø¢Ø²Ù…ÙˆÙ†â€ŒÙ‡Ø§ Ùˆ Ø¬Ø¯ÙˆÙ„ Ø§Ù…ØªÛŒØ§Ø²Ø§Øª Ø±Ù‚Ø§Ø¨ØªÛŒ</div>
+            <div class="feature-row"><span class="feature-dot">◆</span> یادگیری شخصی‌سازی‌شده با مسیر امتیاز</div>
+            <div class="feature-row"><span class="feature-dot">◆</span> مقالات و دوره‌های به‌روز AI</div>
+            <div class="feature-row"><span class="feature-dot">◆</span> آزمون‌ها و جدول امتیازات رقابتی</div>
           </div>
           <div class="brand-ring r1"></div>
           <div class="brand-ring r2"></div>
@@ -59,27 +59,27 @@ interface DataPacket {
           </div>
 
           <div class="login-header">
-            <img src="assets/logo.png" alt="Ø´Ø±Ú©Øª Ø·Ø±Ø§Ø­ÛŒ Ùˆ Ø³Ø§Ø®ØªÙ…Ø§Ù† Ù†ÙØª" class="login-logo">
-            <h1>Ø´Ø±Ú©Øª Ø·Ø±Ø§Ø­ÛŒ Ùˆ Ø³Ø§Ø®ØªÙ…Ø§Ù† Ù†ÙØª</h1>
-            <p>Ø¨Ø±Ø§ÛŒ Ø§Ø¯Ø§Ù…Ù‡ ÙˆØ§Ø±Ø¯ Ø­Ø³Ø§Ø¨ Ø®ÙˆØ¯ Ø´ÙˆÛŒØ¯</p>
+            <img src="assets/logo.png" alt="شرکت طراحی و ساختمان نفت" class="login-logo">
+            <h1>شرکت طراحی و ساختمان نفت</h1>
+            <p>برای ادامه وارد حساب خود شوید</p>
           </div>
           <form (ngSubmit)="onSubmit()" #loginForm="ngForm">
             <div class="form-group">
-              <label for="username">Ù†Ø§Ù… Ú©Ø§Ø±Ø¨Ø±ÛŒ</label>
-              <input type="text" id="username" name="username" [(ngModel)]="credentials.username" required placeholder="Ù†Ø§Ù… Ú©Ø§Ø±Ø¨Ø±ÛŒ Ø®ÙˆØ¯ Ø±Ø§ ÙˆØ§Ø±Ø¯ Ú©Ù†ÛŒØ¯" autocomplete="username">
+              <label for="username">نام کاربری</label>
+              <input type="text" id="username" name="username" [(ngModel)]="credentials.username" required placeholder="نام کاربری خود را وارد کنید" autocomplete="username">
             </div>
             <div class="form-group">
-              <label for="password">Ø±Ù…Ø² Ø¹Ø¨ÙˆØ±</label>
-              <input type="password" id="password" name="password" [(ngModel)]="credentials.password" required placeholder="Ø±Ù…Ø² Ø¹Ø¨ÙˆØ± Ø®ÙˆØ¯ Ø±Ø§ ÙˆØ§Ø±Ø¯ Ú©Ù†ÛŒØ¯" autocomplete="current-password">
+              <label for="password">رمز عبور</label>
+              <input type="password" id="password" name="password" [(ngModel)]="credentials.password" required placeholder="رمز عبور خود را وارد کنید" autocomplete="current-password">
             </div>
             <div class="error-message" *ngIf="errorMessage">{{ errorMessage }}</div>
             <button type="submit" class="btn-primary btn-submit" [disabled]="isLoading">
               <span *ngIf="isLoading" class="spinner"></span>
-              {{ isLoading ? 'Ø¯Ø± Ø­Ø§Ù„ ÙˆØ±ÙˆØ¯...' : 'ÙˆØ±ÙˆØ¯ Ø¨Ù‡ Ø³ÛŒØ³ØªÙ…' }}
+              {{ isLoading ? 'در حال ورود...' : 'ورود به سیستم' }}
             </button>
           </form>
           <div class="login-footer">
-            <p>Ø­Ø³Ø§Ø¨ Ú©Ø§Ø±Ø¨Ø±ÛŒ Ù†Ø¯Ø§Ø±ÛŒØ¯ØŸ <a routerLink="/register">Ø«Ø¨Øªâ€ŒÙ†Ø§Ù… Ú©Ù†ÛŒØ¯</a></p>
+            <p>حساب کاربری ندارید؟ <a routerLink="/register">ثبت‌نام کنید</a></p>
           </div>
         </div>
       </div>
@@ -228,7 +228,7 @@ interface DataPacket {
       background: linear-gradient(150deg, #2c120a 0%, #451f12 45%, #0a3a4d 100%);
     }
 
-    /* ===== Animated flowing color mesh â€” clearly visible, stays inside the form ===== */
+    /* ===== Animated flowing color mesh — clearly visible, stays inside the form ===== */
     .login-card::before {
       content: '';
       position: absolute;
@@ -596,8 +596,7 @@ export class LoginComponent implements AfterViewInit, OnDestroy {
     this.errorMessage = '';
     this.authService.login(this.credentials).subscribe({
       next: () => { this.router.navigate(['/dashboard']); },
-      error: (err) => { this.errorMessage = err.error?.message || 'Ù†Ø§Ù… Ú©Ø§Ø±Ø¨Ø±ÛŒ ÛŒØ§ Ø±Ù…Ø² Ø¹Ø¨ÙˆØ± Ø§Ø´ØªØ¨Ø§Ù‡ Ø§Ø³Øª'; this.isLoading = false; }
+      error: (err) => { this.errorMessage = err.error?.message || 'نام کاربری یا رمز عبور اشتباه است'; this.isLoading = false; }
     });
   }
 }
-
