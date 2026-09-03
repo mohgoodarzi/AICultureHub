@@ -23,7 +23,7 @@ import { ThemeService } from '../../core/services/theme.service';
         <!-- Brand hero panel -->
         <div class="brand-panel">
           <div class="brand-chip">✦ سامانه هوش مصنوعی سازمانی</div>
-          <h2>آیندهٔ کار،<br>هوشمند می‌سازیم</h2>
+          <h2>با هم،<br>سازمانی هوشمندتر می‌سازیم</h2>
           <p>پلتفرم ترویج فرهنگ هوش مصنوعی و تحول دیجیتال — آموزش، مقالات، آزمون و رقابت در یک تجربهٔ یکپارچه.</p>
           <div class="brand-features">
             <div class="feature-row"><span class="feature-dot">◆</span> یادگیری شخصی‌سازی‌شده با مسیر امتیاز</div>
@@ -196,11 +196,59 @@ import { ThemeService } from '../../core/services/theme.service';
     /* Card side */
     .login-card {
       flex: 1;
+      position: relative;
+      isolation: isolate;
+      overflow: hidden;
       padding: 52px 48px;
       display: flex;
       flex-direction: column;
       justify-content: center;
-      background: transparent;
+      background:
+        linear-gradient(160deg, color-mix(in srgb, var(--theme-primary) 6%, transparent) 0%, transparent 45%, color-mix(in srgb, var(--theme-secondary) 7%, transparent) 100%);
+    }
+
+    /* Soft flowing aurora glow — only inside the login form area */
+    .login-card::before {
+      content: '';
+      position: absolute;
+      inset: -45%;
+      z-index: -1;
+      background:
+        radial-gradient(42% 38% at 28% 24%, color-mix(in srgb, var(--theme-primary) 14%, transparent), transparent 70%),
+        radial-gradient(40% 42% at 74% 68%, color-mix(in srgb, var(--theme-secondary) 13%, transparent), transparent 70%),
+        radial-gradient(34% 34% at 62% 18%, color-mix(in srgb, var(--theme-accent) 9%, transparent), transparent 72%);
+      animation: cardAurora 20s ease-in-out infinite alternate;
+      will-change: transform;
+    }
+
+    /* Gentle light sweep passing across the form */
+    .login-card::after {
+      content: '';
+      position: absolute;
+      top: -60%;
+      right: -25%;
+      width: 55%;
+      height: 220%;
+      z-index: -1;
+      background: linear-gradient(105deg, transparent 42%, color-mix(in srgb, var(--theme-primary) 8%, transparent) 50%, transparent 58%);
+      animation: cardSheen 11s ease-in-out infinite;
+      will-change: transform, opacity;
+    }
+
+    @keyframes cardAurora {
+      0%   { transform: translate3d(0, 0, 0) scale(1); }
+      50%  { transform: translate3d(4%, -3%, 0) scale(1.07) rotate(4deg); }
+      100% { transform: translate3d(-3%, 4%, 0) scale(1.03) rotate(-3deg); }
+    }
+
+    @keyframes cardSheen {
+      0%        { transform: translateX(0) rotate(12deg); opacity: 0; }
+      30%       { opacity: 1; }
+      65%, 100% { transform: translateX(-160%) rotate(12deg); opacity: 0; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .login-card::before, .login-card::after { animation: none; }
     }
 
     .login-header { text-align: center; margin-bottom: 34px; }
