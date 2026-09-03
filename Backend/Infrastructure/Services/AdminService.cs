@@ -62,6 +62,46 @@ public class AdminService : IAdminService
         return await GetUserByIdAsync(id);
     }
 
+    public async Task<UserDto?> AdminUpdateUserAsync(int id, AdminUpdateUserRequest request)
+    {
+        var user = await _context.Users.FindAsync(id);
+        if (user == null) return null;
+
+        if (!string.IsNullOrEmpty(request.FirstName)) user.FirstName = request.FirstName;
+        if (!string.IsNullOrEmpty(request.LastName)) user.LastName = request.LastName;
+
+        if (!string.IsNullOrWhiteSpace(request.Email))
+        {
+            var email = request.Email.Trim();
+            if (await _context.Users.AnyAsync(u => u.Email == email && u.Id != id))
+                throw new InvalidOperationException("Email is already in use by another user");
+            user.Email = email;
+        }
+
+        if (request.EmployeeId != null) user.EmployeeId = string.IsNullOrWhiteSpace(request.EmployeeId) ? null : request.EmployeeId.Trim();
+
+        // Nullable FKs: explicit null clears the assignment; omitted field leaves it unchanged.
+        if (request.DepartmentId.HasValue) user.DepartmentId = request.DepartmentId.Value == 0 ? null : request.DepartmentId;
+        if (request.PositionId.HasValue) user.PositionId = request.PositionId.Value == 0 ? null : request.PositionId;
+
+        if (request.IsActive.HasValue)
+        {
+            user.IsActive = request.IsActive.Value;
+        }
+
+        if (!string.IsNullOrEmpty(request.Password))
+        {
+            var salt = GenerateSalt();
+            user.PasswordSalt = salt;
+            user.PasswordHash = HashPassword(request.Password, salt);
+        }
+
+        user.ModifiedDate = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+        await _auditService.LogAsync(null, "ADMIN_UPDATE_USER", "User", id, $"Admin updated user: {user.Username}");
+        return await GetUserByIdAsync(id);
+    }
+
     public async Task<bool> DeactivateUserAsync(int id)
     {
         var user = await _context.Users.FindAsync(id);
@@ -167,12 +207,12 @@ public class AdminService : IAdminService
     public async Task<BadgeDto> CreateBadgeAsync(BadgeDto model) { var badge = new Badge { Name = model.Name, Description = model.Description, IconUrl = model.IconUrl, Color = model.Color, Criteria = model.Description, CriteriaType = "TotalPoints", CriteriaValue = 100, Points = 50, IsActive = true, CreatedDate = DateTime.UtcNow }; _context.Badges.Add(badge); await _context.SaveChangesAsync(); return new BadgeDto { Id = badge.Id, Name = badge.Name, Description = badge.Description, IconUrl = badge.IconUrl, Color = badge.Color }; }
     public async Task<BadgeDto?> UpdateBadgeAsync(int id, BadgeDto model) { var badge = await _context.Badges.FindAsync(id); if (badge == null) return null; badge.Name = model.Name; badge.Description = model.Description; badge.IconUrl = model.IconUrl; badge.Color = model.Color; badge.ModifiedDate = DateTime.UtcNow; await _context.SaveChangesAsync(); return new BadgeDto { Id = badge.Id, Name = badge.Name, Description = badge.Description, IconUrl = badge.IconUrl, Color = badge.Color }; }
 
-    public async Task<List<DepartmentDto>> GetDepartmentsAsync() => await _context.Departments.Where(d => d.IsActive).OrderBy(d => d.DisplayOrder).ThenBy(d => d.Name).Select(d => new DepartmentDto { Id = d.Id, Name = d.Name, Description = d.Description, Code = d.Code, ParentId = d.ParentId, DisplayOrder = d.DisplayOrder, IsActive = d.IsActive }).ToListAsync();
+    public async Task<List<DepartmentDto>> GetDepartmentsAsync() => await _context.Departments.OrderBy(d => d.IsActive == false).ThenBy(d => d.DisplayOrder).ThenBy(d => d.Name).Select(d => new DepartmentDto { Id = d.Id, Name = d.Name, Description = d.Description, Code = d.Code, ParentId = d.ParentId, DisplayOrder = d.DisplayOrder, IsActive = d.IsActive }).ToListAsync();
     public async Task<DepartmentDto> CreateDepartmentAsync(DepartmentDto model) { var dept = new Department { Name = model.Name, Description = model.Description, Code = model.Code, ParentId = model.ParentId, DisplayOrder = model.DisplayOrder, IsActive = true, CreatedDate = DateTime.UtcNow }; _context.Departments.Add(dept); await _context.SaveChangesAsync(); return new DepartmentDto { Id = dept.Id, Name = dept.Name, Description = dept.Description, Code = dept.Code, ParentId = dept.ParentId, DisplayOrder = dept.DisplayOrder, IsActive = dept.IsActive }; }
     public async Task<DepartmentDto?> UpdateDepartmentAsync(int id, DepartmentDto model) { var dept = await _context.Departments.FindAsync(id); if (dept == null) return null; dept.Name = model.Name; dept.Description = model.Description; dept.Code = model.Code; dept.ParentId = model.ParentId; dept.DisplayOrder = model.DisplayOrder; dept.IsActive = model.IsActive; dept.ModifiedDate = DateTime.UtcNow; await _context.SaveChangesAsync(); return new DepartmentDto { Id = dept.Id, Name = dept.Name, Description = dept.Description, Code = dept.Code, ParentId = dept.ParentId, DisplayOrder = dept.DisplayOrder, IsActive = dept.IsActive }; }
     public async Task<bool> DeleteDepartmentAsync(int id) { var dept = await _context.Departments.FindAsync(id); if (dept == null) return false; if (await _context.Users.AnyAsync(u => u.DepartmentId == id)) return false; dept.IsActive = false; dept.ModifiedDate = DateTime.UtcNow; await _context.SaveChangesAsync(); return true; }
 
-    public async Task<List<PositionDto>> GetPositionsAsync() => await _context.Positions.Include(p => p.Department).Where(p => p.IsActive).OrderBy(p => p.DisplayOrder).ThenBy(p => p.Name).Select(p => new PositionDto { Id = p.Id, Name = p.Name, Description = p.Description, Code = p.Code, DepartmentId = p.DepartmentId, DepartmentName = p.Department != null ? p.Department.Name : null, DisplayOrder = p.DisplayOrder, IsActive = p.IsActive }).ToListAsync();
+    public async Task<List<PositionDto>> GetPositionsAsync() => await _context.Positions.Include(p => p.Department).OrderBy(p => p.IsActive == false).ThenBy(p => p.DisplayOrder).ThenBy(p => p.Name).Select(p => new PositionDto { Id = p.Id, Name = p.Name, Description = p.Description, Code = p.Code, DepartmentId = p.DepartmentId, DepartmentName = p.Department != null ? p.Department.Name : null, DisplayOrder = p.DisplayOrder, IsActive = p.IsActive }).ToListAsync();
     public async Task<PositionDto> CreatePositionAsync(PositionDto model) { var pos = new Position { Name = model.Name, Description = model.Description, Code = model.Code, DepartmentId = model.DepartmentId, DisplayOrder = model.DisplayOrder, IsActive = true, CreatedDate = DateTime.UtcNow }; _context.Positions.Add(pos); await _context.SaveChangesAsync(); var dept = model.DepartmentId.HasValue ? await _context.Departments.FindAsync(model.DepartmentId) : null; return new PositionDto { Id = pos.Id, Name = pos.Name, Description = pos.Description, Code = pos.Code, DepartmentId = pos.DepartmentId, DepartmentName = dept?.Name, DisplayOrder = pos.DisplayOrder, IsActive = pos.IsActive }; }
     public async Task<PositionDto?> UpdatePositionAsync(int id, PositionDto model) { var pos = await _context.Positions.FindAsync(id); if (pos == null) return null; pos.Name = model.Name; pos.Description = model.Description; pos.Code = model.Code; pos.DepartmentId = model.DepartmentId; pos.DisplayOrder = model.DisplayOrder; pos.IsActive = model.IsActive; pos.ModifiedDate = DateTime.UtcNow; await _context.SaveChangesAsync(); var dept = model.DepartmentId.HasValue ? await _context.Departments.FindAsync(model.DepartmentId) : null; return new PositionDto { Id = pos.Id, Name = pos.Name, Description = pos.Description, Code = pos.Code, DepartmentId = pos.DepartmentId, DepartmentName = dept?.Name, DisplayOrder = pos.DisplayOrder, IsActive = pos.IsActive }; }
     public async Task<bool> DeletePositionAsync(int id) { var pos = await _context.Positions.FindAsync(id); if (pos == null) return false; if (await _context.Users.AnyAsync(u => u.PositionId == id)) return false; pos.IsActive = false; pos.ModifiedDate = DateTime.UtcNow; await _context.SaveChangesAsync(); return true; }

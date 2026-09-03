@@ -300,7 +300,7 @@ public class ApplicationDbContext : DbContext
         {
             entity.HasIndex(e => new { e.UserId, e.BadgeId }).IsUnique();
             entity.HasOne(ub => ub.User)
-                  .WithMany()
+                  .WithMany(u => u.Badges)
                   .HasForeignKey(ub => ub.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
             entity.HasOne(ub => ub.Badge)

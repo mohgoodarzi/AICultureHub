@@ -69,6 +69,18 @@ public class AuthService : IAuthService
 
     public async Task<LoginResponse> RegisterAsync(RegisterRequest request)
     {
+        if (string.IsNullOrWhiteSpace(request.Username) || request.Username.Trim().Length < 3)
+            throw new InvalidOperationException("Username must be at least 3 characters");
+        if (string.IsNullOrWhiteSpace(request.Email) || !request.Email.Contains('@'))
+            throw new InvalidOperationException("A valid email address is required");
+        if (string.IsNullOrWhiteSpace(request.Password) || request.Password.Length < 6)
+            throw new InvalidOperationException("Password must be at least 6 characters");
+        if (string.IsNullOrWhiteSpace(request.FirstName) || string.IsNullOrWhiteSpace(request.LastName))
+            throw new InvalidOperationException("First name and last name are required");
+
+        request.Username = request.Username.Trim().ToLowerInvariant();
+        request.Email = request.Email.Trim().ToLowerInvariant();
+
         if (await _context.Users.AnyAsync(u => u.Username == request.Username))
         {
             throw new InvalidOperationException("Username already exists");

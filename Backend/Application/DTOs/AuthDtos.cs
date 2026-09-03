@@ -82,3 +82,19 @@ public class UpdateProfileRequest
     public string? Bio { get; set; }
     public string? AvatarUrl { get; set; }
 }
+
+/// <summary>
+/// Admin-only user update. Distinct from self-service profile updates so that
+/// sensitive fields (email, employeeId, isActive, password) require admin context.
+/// </summary>
+public class AdminUpdateUserRequest
+{
+    public string? FirstName { get; set; }
+    public string? LastName { get; set; }
+    public string? Email { get; set; }
+    public string? EmployeeId { get; set; }
+    public int? DepartmentId { get; set; }
+    public int? PositionId { get; set; }
+    public bool? IsActive { get; set; }
+    public string? Password { get; set; }
+}

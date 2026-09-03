@@ -1,9 +1,11 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ThemeService } from '../../core/services/theme.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-register',
@@ -48,13 +50,25 @@ import { ThemeService } from '../../core/services/theme.service';
               <input type="password" id="password" name="password" [(ngModel)]="user.password" required>
             </div>
             <div class="form-group">
-              <label for="department">دپارتمان</label>
-              <input type="text" id="department" name="department" [(ngModel)]="user.department">
+              <label for="employeeId">کد پرسنلی</label>
+              <input type="text" id="employeeId" name="employeeId" [(ngModel)]="user.employeeId">
             </div>
           </div>
-          <div class="form-group">
-            <label for="position">سمت</label>
-            <input type="text" id="position" name="position" [(ngModel)]="user.position">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="departmentId">واحد سازمانی</label>
+              <select id="departmentId" name="departmentId" [(ngModel)]="user.departmentId">
+                <option [ngValue]="null">انتخاب واحد...</option>
+                <option *ngFor="let dept of departments" [ngValue]="dept.id">{{ dept.name }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="positionId">سمت</label>
+              <select id="positionId" name="positionId" [(ngModel)]="user.positionId">
+                <option [ngValue]="null">انتخاب سمت...</option>
+                <option *ngFor="let pos of positions" [ngValue]="pos.id">{{ pos.name }}</option>
+              </select>
+            </div>
           </div>
           <div class="error-message" *ngIf="errorMessage">{{ errorMessage }}</div>
           <button type="submit" class="btn-primary" [disabled]="isLoading">
@@ -131,7 +145,7 @@ import { ThemeService } from '../../core/services/theme.service';
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
     .form-group { margin-bottom: 16px; }
     .form-group label { display: block; margin-bottom: 6px; font-weight: 700; color: var(--theme-text); font-size: 0.85rem; }
-    .form-group input {
+    .form-group input, .form-group select {
       width: 100%;
       padding: 11px 14px;
       border: 1.5px solid var(--theme-border);
@@ -141,6 +155,7 @@ import { ThemeService } from '../../core/services/theme.service';
       box-sizing: border-box;
       background: var(--theme-surface);
       color: var(--theme-text);
+      font-family: inherit;
     }
     .form-group input:focus {
       outline: none;
@@ -171,24 +186,43 @@ import { ThemeService } from '../../core/services/theme.service';
     }
   `]
 })
-export class RegisterComponent {
+export class RegisterComponent implements OnInit {
   user = {
     firstName: '',
     lastName: '',
     username: '',
     email: '',
     password: '',
-    department: '',
-    position: ''
+    employeeId: '',
+    departmentId: null as number | null,
+    positionId: null as number | null
   };
+  departments: any[] = [];
+  positions: any[] = [];
   isLoading = false;
   errorMessage = '';
 
   constructor(
     private authService: AuthService,
+    private http: HttpClient,
     private router: Router,
     private themeService: ThemeService
   ) {}
+
+  ngOnInit(): void {
+    this.loadMasterData();
+  }
+
+  loadMasterData(): void {
+    this.http.get<any[]>(`${environment.apiUrl}/auth/departments`).subscribe({
+      next: (data) => this.departments = data || [],
+      error: () => this.departments = []
+    });
+    this.http.get<any[]>(`${environment.apiUrl}/auth/positions`).subscribe({
+      next: (data) => this.positions = data || [],
+      error: () => this.positions = []
+    });
+  }
 
   onSubmit(): void {
     if (this.isLoading) return;

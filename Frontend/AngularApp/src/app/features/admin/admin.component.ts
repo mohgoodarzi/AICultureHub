@@ -33,6 +33,7 @@ import { environment } from '../../../environments/environment';
         <button [class.active]="activeTab === 'categories'" (click)="activeTab = 'categories'; loadAllCategories()"><span class="tab-ico">🗂</span>دسته‌بندی‌ها</button>
         <button [class.active]="activeTab === 'courses'" (click)="activeTab = 'courses'; loadCourses()"><span class="tab-ico">🎓</span>دوره‌ها</button>
         <button [class.active]="activeTab === 'users'" (click)="activeTab = 'users'"><span class="tab-ico">👥</span>کاربران</button>
+        <button [class.active]="activeTab === 'org'" (click)="activeTab = 'org'; loadOrgData()"><span class="tab-ico">🏢</span>واحدها و سمت‌ها</button>
         <button [class.active]="activeTab === 'roles'" (click)="activeTab = 'roles'; loadRoles()"><span class="tab-ico">🔑</span>نقش‌ها</button>
         <button [class.active]="activeTab === 'announcements'" (click)="activeTab = 'announcements'"><span class="tab-ico">📣</span>اطلاعیه‌ها</button>
       </div>
@@ -240,10 +241,109 @@ import { environment } from '../../../environments/environment';
               <td class="actions">
                 <button class="btn-edit" (click)="openUserRolesModal(user)">نقش‌ها</button>
                 <button class="btn-edit" (click)="editUser(user)">ویرایش</button>
+                <button class="btn-toggle" [class.deactivated]="user.isActive" (click)="toggleUserActive(user)">
+                  {{ user.isActive ? 'غیرفعال کردن' : 'فعال کردن' }}
+                </button>
               </td>
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- Organization Master Data Section (Units + Positions) -->
+      <div class="crud-section" *ngIf="activeTab === 'org'">
+        <div class="org-grid">
+          <!-- Units (Departments) -->
+          <div class="org-pane">
+            <div class="crud-header">
+              <h3>🏢 واحدهای سازمانی</h3>
+              <button class="btn-primary" (click)="openOrgModal('unit')">+ واحد جدید</button>
+            </div>
+            <table class="crud-table">
+              <thead>
+                <tr><th>نام</th><th>کد</th><th>وضعیت</th><th>عملیات</th></tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let unit of departments">
+                  <td>{{ unit.name }}</td>
+                  <td>{{ unit.code || '-' }}</td>
+                  <td>
+                    <span class="status-badge" [class.published]="unit.isActive">
+                      {{ unit.isActive ? 'فعال' : 'غیرفعال' }}
+                    </span>
+                  </td>
+                  <td class="actions">
+                    <button class="btn-edit" (click)="openOrgModal('unit', unit)">ویرایش</button>
+                    <button class="btn-delete" (click)="deleteUnit(unit.id)">حذف</button>
+                  </td>
+                </tr>
+                <tr *ngIf="departments.length === 0"><td colspan="4" style="text-align:center;color:var(--theme-text-muted)">داده‌ای وجود ندارد</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Positions -->
+          <div class="org-pane">
+            <div class="crud-header">
+              <h3>💼 سمت‌های سازمانی</h3>
+              <button class="btn-primary" (click)="openOrgModal('position')">+ سمت جدید</button>
+            </div>
+            <table class="crud-table">
+              <thead>
+                <tr><th>نام</th><th>واحد</th><th>وضعیت</th><th>عملیات</th></tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let pos of positions">
+                  <td>{{ pos.name }}</td>
+                  <td>{{ pos.departmentName || '-' }}</td>
+                  <td>
+                    <span class="status-badge" [class.published]="pos.isActive">
+                      {{ pos.isActive ? 'فعال' : 'غیرفعال' }}
+                    </span>
+                  </td>
+                  <td class="actions">
+                    <button class="btn-edit" (click)="openOrgModal('position', pos)">ویرایش</button>
+                    <button class="btn-delete" (click)="deletePosition(pos.id)">حذف</button>
+                  </td>
+                </tr>
+                <tr *ngIf="positions.length === 0"><td colspan="4" style="text-align:center;color:var(--theme-text-muted)">داده‌ای وجود ندارد</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Org Master Data Modal -->
+      <div class="modal" *ngIf="showOrgModal" (click)="closeOrgModal()">
+        <div class="modal-content" style="max-width: 480px;" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h3>{{ editingOrgKind === 'unit' ? (editingOrgId ? 'ویرایش واحد سازمانی' : 'واحد سازمانی جدید') : (editingOrgId ? 'ویرایش سمت' : 'سمت جدید') }}</h3>
+            <button class="btn-close" (click)="closeOrgModal()">✕</button>
+          </div>
+          <div class="form-group">
+            <label>نام</label>
+            <input type="text" [(ngModel)]="orgForm.name" name="orgName" placeholder="نام...">
+          </div>
+          <div class="form-group" *ngIf="editingOrgKind === 'unit'">
+            <label>کد</label>
+            <input type="text" [(ngModel)]="orgForm.code" name="orgCode" placeholder="کد واحد (اختیاری)">
+          </div>
+          <div class="form-group" *ngIf="editingOrgKind === 'position'">
+            <label>واحد سازمانی</label>
+            <select [(ngModel)]="orgForm.departmentId" name="orgDeptId">
+              <option [ngValue]="null">بدون واحد</option>
+              <option *ngFor="let unit of departments" [ngValue]="unit.id">{{ unit.name }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>توضیحات</label>
+            <input type="text" [(ngModel)]="orgForm.description" name="orgDesc" placeholder="توضیحات (اختیاری)">
+          </div>
+          <div class="modal-actions">
+            <button class="btn-primary" (click)="saveOrg()" [disabled]="!orgForm.name">ذخیره</button>
+            <button class="btn-cancel" (click)="closeOrgModal()">انصراف</button>
+          </div>
+        </div>
       </div>
 
       <!-- Announcements Section -->
@@ -597,16 +697,16 @@ import { environment } from '../../../environments/environment';
             <input type="password" [(ngModel)]="userForm.confirmPassword" name="confirmPassword">
           </div>
           <div class="form-group">
-            <label>دپارتمان</label>
+            <label>واحد سازمانی</label>
             <select [(ngModel)]="userForm.departmentId" name="departmentId">
-              <option [ngValue]="null">انتخاب دپارتمان...</option>
+              <option [ngValue]="null">بدون واحد</option>
               <option *ngFor="let dept of departments" [value]="dept.id">{{ dept.name }}</option>
             </select>
           </div>
           <div class="form-group">
             <label>سمت</label>
             <select [(ngModel)]="userForm.positionId" name="positionId">
-              <option [ngValue]="null">انتخاب سمت...</option>
+              <option [ngValue]="null">بدون سمت</option>
               <option *ngFor="let pos of positions" [value]="pos.id">{{ pos.name }}</option>
             </select>
           </div>
@@ -1011,6 +1111,16 @@ import { environment } from '../../../environments/environment';
     }
     .modal-header h3 { margin: 0; font-size: 1.05rem; font-weight: 800; color: var(--theme-text); }
 
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
+
+    .org-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: start; }
+    .org-pane { background: var(--theme-surface); border: 1px solid var(--theme-border); border-radius: var(--radius-lg); padding: 18px; box-shadow: var(--theme-card-shadow); }
+    .org-pane .crud-header h3 { margin: 0; font-size: 1rem; font-weight: 800; color: var(--theme-text); }
+    .org-pane .crud-table { margin-top: 14px; }
+    .btn-toggle.deactivated { background: linear-gradient(135deg, var(--theme-success), #34d399); box-shadow: 0 3px 10px color-mix(in srgb, var(--theme-success) 30%, transparent); }
+
+    @media (max-width: 1024px) { .org-grid { grid-template-columns: 1fr; } }
+
     .btn-close {
       width: 34px; height: 34px;
       border: 1.5px solid var(--theme-border);
@@ -1256,6 +1366,11 @@ export class AdminComponent implements OnInit {
   totalDislikes = 0;
   totalVotes = 0;
   overallSatisfaction = 0;
+
+  showOrgModal = false;
+  editingOrgKind: 'unit' | 'position' = 'unit';
+  editingOrgId: number | null = null;
+  orgForm: any = { name: '', code: '', description: '', departmentId: null };
 
   constructor(private http: HttpClient) {}
 
@@ -1565,6 +1680,83 @@ export class AdminComponent implements OnInit {
     });
   }
 
+  loadOrgData(): void {
+    this.loadDepartments();
+    this.loadPositions();
+  }
+
+  openOrgModal(kind: 'unit' | 'position', existing?: any): void {
+    this.editingOrgKind = kind;
+    this.editingOrgId = existing ? existing.id : null;
+    if (existing) {
+      this.orgForm = {
+        name: existing.name || '',
+        code: existing.code || '',
+        description: existing.description || '',
+        departmentId: existing.departmentId || null
+      };
+    } else {
+      this.orgForm = { name: '', code: '', description: '', departmentId: null };
+    }
+    this.showOrgModal = true;
+  }
+
+  closeOrgModal(): void {
+    this.showOrgModal = false;
+    this.editingOrgId = null;
+  }
+
+  saveOrg(): void {
+    const isUnit = this.editingOrgKind === 'unit';
+    const body: any = {
+      name: this.orgForm.name,
+      code: this.orgForm.code || null,
+      description: this.orgForm.description || null,
+      displayOrder: 0
+    };
+    if (!isUnit) body.departmentId = this.orgForm.departmentId;
+
+    const url = isUnit
+      ? `${this.apiUrl}/admin/departments`
+      : `${this.apiUrl}/admin/positions`;
+    const req = this.editingOrgId
+      ? this.http.put<any>(`${url}/${this.editingOrgId}`, body)
+      : this.http.post<any>(url, body);
+
+    req.subscribe({
+      next: () => { this.closeOrgModal(); this.loadOrgData(); },
+      error: (err) => alert('خطا در ذخیره: ' + (err.error?.message || err.message))
+    });
+  }
+
+  deleteUnit(id: number): void {
+    if (!confirm('آیا از حذف این واحد اطمینان دارید؟')) return;
+    this.http.delete(`${this.apiUrl}/admin/departments/${id}`).subscribe({
+      next: () => this.loadOrgData(),
+      error: (err) => alert(err.error?.message || 'این واحد به کاربران اختصاص یافته و قابل حذف نیست')
+    });
+  }
+
+  deletePosition(id: number): void {
+    if (!confirm('آیا از حذف این سمت اطمینان دارید؟')) return;
+    this.http.delete(`${this.apiUrl}/admin/positions/${id}`).subscribe({
+      next: () => this.loadOrgData(),
+      error: (err) => alert(err.error?.message || 'این سمت به کاربران اختصاص یافته و قابل حذف نیست')
+    });
+  }
+
+  toggleUserActive(user: any): void {
+    const action = user.isActive ? 'deactivate' : 'activate';
+    const msg = user.isActive
+      ? `آیا از غیرفعال کردن کاربر «${user.firstName} ${user.lastName}» اطمینان دارید؟ کاربر غیرفعال امکان ورود به سامانه را نخواهد داشت.`
+      : `کاربر «${user.firstName} ${user.lastName}» فعال شود؟`;
+    if (!confirm(msg)) return;
+    this.http.post(`${this.apiUrl}/admin/users/${user.id}/${action}`, {}).subscribe({
+      next: () => { user.isActive = !user.isActive; },
+      error: (err) => alert('خطا: ' + (err.error?.message || err.message))
+    });
+  }
+
   closeUserModal(): void {
     this.showUserModal = false;
     this.editingUser = null;
@@ -1598,9 +1790,11 @@ export class AdminComponent implements OnInit {
       const updateData: any = {
         firstName: this.userForm.firstName,
         lastName: this.userForm.lastName,
-        departmentId: this.userForm.departmentId,
-        positionId: this.userForm.positionId,
+        email: this.userForm.email,
         employeeId: this.userForm.employeeId,
+        // 0 tells the backend to clear the assignment (null = unchanged)
+        departmentId: this.userForm.departmentId ?? 0,
+        positionId: this.userForm.positionId ?? 0,
         isActive: this.userForm.isActive
       };
       if (this.userForm.password) {
@@ -1617,6 +1811,10 @@ export class AdminComponent implements OnInit {
       }
       if (this.userForm.password !== this.userForm.confirmPassword) {
         alert('خطا: تکرار رمز عبور مطابقت ندارد');
+        return;
+      }
+      if (!this.userForm.username || !this.userForm.email) {
+        alert('خطا: نام کاربری و ایمیل الزامی است');
         return;
       }
       this.http.post<any>(`${this.apiUrl}/admin/users`, this.userForm).subscribe({

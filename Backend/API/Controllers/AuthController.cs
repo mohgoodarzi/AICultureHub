@@ -47,6 +47,28 @@ public class AuthController : ControllerBase
         {
             return BadRequest(new { message = ex.Message });
         }
+        catch
+        {
+            return StatusCode(500, new { message = "An error occurred during registration." });
+        }
+    }
+
+    /// <summary>
+    /// Public lookup lists for the anonymous registration form (units/departments and positions).
+    /// Read-only master data; only active entries are returned.
+    /// </summary>
+    [HttpGet("departments")]
+    public async Task<IActionResult> GetPublicDepartments([FromServices] IAdminService adminService)
+    {
+        var departments = await adminService.GetDepartmentsAsync();
+        return Ok(departments.Where(d => d.IsActive).OrderBy(d => d.DisplayOrder).ThenBy(d => d.Name));
+    }
+
+    [HttpGet("positions")]
+    public async Task<IActionResult> GetPublicPositions([FromServices] IAdminService adminService)
+    {
+        var positions = await adminService.GetPositionsAsync();
+        return Ok(positions.Where(p => p.IsActive).OrderBy(p => p.DisplayOrder).ThenBy(p => p.Name));
     }
 
     [Authorize]

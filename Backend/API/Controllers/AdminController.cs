@@ -52,11 +52,25 @@ public class AdminController : ControllerBase
     }
 
     [HttpPut("users/{id}")]
-    public async Task<IActionResult> UpdateUser(int id, [FromBody] UpdateProfileRequest request)
+    public async Task<IActionResult> UpdateUser(int id, [FromBody] AdminUpdateUserRequest request)
     {
-        var user = await _adminService.UpdateUserAsync(id, request);
-        if (user == null) return NotFound();
-        return Ok(user);
+        try
+        {
+            // Prevent an administrator from deactivating their own account (lockout prevention)
+            var currentUserId = GetCurrentUserId();
+            if (request.IsActive == false && currentUserId == id)
+            {
+                return BadRequest(new { message = "Cannot deactivate your own account" });
+            }
+
+            var user = await _adminService.AdminUpdateUserAsync(id, request);
+            if (user == null) return NotFound();
+            return Ok(user);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpPost("users/{id}/deactivate")]

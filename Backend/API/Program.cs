@@ -139,6 +139,11 @@ using (var scope = app.Services.CreateScope())
     {
         dbContext.Database.EnsureCreated();
 
+        // Generic schema sync: EnsureCreated() never alters existing tables. Add any columns
+        // present in the EF model but missing from the database (BaseEntity columns on tables
+        // created before they were added, etc.) so inserts don't fail with "Invalid column name".
+        SyncMissingColumns(dbContext);
+
         // Idempotent permission sync: add any missing permission codes (handles schema evolution
         // on databases created before the RBAC redesign, where old lowercase codes existed).
         var rbacPermissions = new (string Name, string Code, string Module, string Description)[]
@@ -614,6 +619,116 @@ using (var scope = app.Services.CreateScope())
     {
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
         logger.LogWarning(ex, "Database seeding failed.");
+    }
+}
+
+static void SyncMissingColumns(ApplicationDbContext dbContext)
+{
+    var conn = dbContext.Database.GetDbConnection();
+    var openedHere = false;
+    if (conn.State != System.Data.ConnectionState.Open) { conn.Open(); openedHere = true; }
+    try
+    {
+        // 1) Create any tables that exist in the model but not in the database.
+        //    Uses EF's generate-schema script so FKs/indexes are correct, executed table-by-table
+        //    with existence checks.
+        var existingTables = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE'";
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read()) existingTables.Add(reader.GetString(0));
+        }
+
+        var missingEntityTypes = dbContext.Model.GetEntityTypes()
+            .Where(e => !string.IsNullOrEmpty(e.GetTableName()) && !existingTables.Contains(e.GetTableName()!))
+            .ToList();
+
+        if (missingEntityTypes.Any())
+        {
+            // Generate the full schema script and execute only the missing tables' CREATE statements.
+            var script = dbContext.Database.GenerateCreateScript();
+            foreach (var entityType in missingEntityTypes)
+            {
+                var tableName = entityType.GetTableName()!;
+                // Extract the CREATE TABLE block for this table from the script
+                var marker = $"CREATE TABLE [{tableName}]";
+                var start = script.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+                if (start < 0) continue;
+                var end = script.IndexOf(");", start, StringComparison.OrdinalIgnoreCase);
+                if (end < 0) continue;
+                var createStatement = script.Substring(start, end - start + 2);
+
+                try
+                {
+                    using var createCmd = conn.CreateCommand();
+                    createCmd.CommandText = createStatement;
+                    createCmd.ExecuteNonQuery();
+                    Console.WriteLine($"Schema sync: created table {tableName}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Schema sync: failed to create table {tableName}: {ex.Message}");
+                }
+            }
+            existingTables = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            using (var refreshCmd = conn.CreateCommand())
+            {
+                refreshCmd.CommandText = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE'";
+                using var reader = refreshCmd.ExecuteReader();
+                while (reader.Read()) existingTables.Add(reader.GetString(0));
+            }
+        }
+
+        // 2) Add any columns present in the model but missing from existing tables.
+        foreach (var entityType in dbContext.Model.GetEntityTypes())
+        {
+            var tableName = entityType.GetTableName();
+            if (string.IsNullOrEmpty(tableName) || !existingTables.Contains(tableName)) continue;
+            var existingCols = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @tn";
+                var p = cmd.CreateParameter();
+                p.ParameterName = "@tn";
+                p.Value = tableName;
+                cmd.Parameters.Add(p);
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read()) existingCols.Add(reader.GetString(0));
+            }
+
+            foreach (var prop in entityType.GetProperties())
+            {
+                var colName = prop.GetColumnName();
+                if (string.IsNullOrEmpty(colName) || existingCols.Contains(colName)) continue;
+                if (prop.IsShadowProperty()) continue;
+
+                var clrType = prop.ClrType;
+                string sqlType;
+                // Columns are added nullable to avoid failing on tables that already contain rows;
+                // new values are always written with defaults by application code.
+                var nullableSuffix = " NULL";
+                if (clrType == typeof(int) || clrType == typeof(int?)) sqlType = "INT" + nullableSuffix;
+                else if (clrType == typeof(long) || clrType == typeof(long?)) sqlType = "BIGINT" + nullableSuffix;
+                else if (clrType == typeof(bool) || clrType == typeof(bool?)) sqlType = "BIT" + nullableSuffix;
+                else if (clrType == typeof(decimal) || clrType == typeof(decimal?)) sqlType = "DECIMAL(18,2)" + nullableSuffix;
+                else if (clrType == typeof(double) || clrType == typeof(double?)) sqlType = "FLOAT" + nullableSuffix;
+                else if (clrType == typeof(float) || clrType == typeof(float?)) sqlType = "REAL" + nullableSuffix;
+                else if (clrType == typeof(DateTime) || clrType == typeof(DateTime?)) sqlType = "DATETIME2" + nullableSuffix;
+                else if (clrType == typeof(Guid) || clrType == typeof(Guid?)) sqlType = "UNIQUEIDENTIFIER" + nullableSuffix;
+                else if (clrType == typeof(byte[])) sqlType = "VARBINARY(MAX)";
+                else sqlType = "NVARCHAR(MAX)" + nullableSuffix;
+
+                using var alter = conn.CreateCommand();
+                alter.CommandText = $"ALTER TABLE [{tableName}] ADD [{colName}] {sqlType}";
+                alter.ExecuteNonQuery();
+                Console.WriteLine($"Schema sync: added column {tableName}.{colName}");
+            }
+        }
+    }
+    finally
+    {
+        if (openedHere) conn.Close();
     }
 }
 

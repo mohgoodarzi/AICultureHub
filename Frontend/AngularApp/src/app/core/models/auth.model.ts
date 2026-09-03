@@ -16,8 +16,8 @@ export interface RegisterRequest {
   password: string;
   firstName: string;
   lastName: string;
-  department?: string;
-  position?: string;
+  departmentId?: number | null;
+  positionId?: number | null;
   employeeId?: string;
 }
 

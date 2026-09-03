@@ -9,6 +9,7 @@ public interface IAdminService
     Task<UserDto?> GetUserByIdAsync(int id);
     Task<UserDto> CreateUserAsync(RegisterRequest request);
     Task<UserDto?> UpdateUserAsync(int id, UpdateProfileRequest request);
+    Task<UserDto?> AdminUpdateUserAsync(int id, AdminUpdateUserRequest request);
     Task<bool> DeactivateUserAsync(int id);
     Task<bool> ActivateUserAsync(int id);
     Task<bool> AssignRoleAsync(int userId, string roleName);
