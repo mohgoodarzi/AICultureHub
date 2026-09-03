@@ -203,48 +203,49 @@ import { ThemeService } from '../../core/services/theme.service';
       display: flex;
       flex-direction: column;
       justify-content: center;
-      background:
-        linear-gradient(160deg, color-mix(in srgb, var(--theme-primary) 6%, transparent) 0%, transparent 45%, color-mix(in srgb, var(--theme-secondary) 7%, transparent) 100%);
+      background: linear-gradient(150deg, #1e1b4b 0%, #4c1d95 45%, #1e3a8a 100%);
     }
 
-    /* Soft flowing aurora glow — only inside the login form area */
+    /* ===== Animated flowing color mesh — clearly visible, stays inside the form ===== */
     .login-card::before {
       content: '';
       position: absolute;
-      inset: -45%;
+      inset: -55%;
       z-index: -1;
       background:
-        radial-gradient(42% 38% at 28% 24%, color-mix(in srgb, var(--theme-primary) 14%, transparent), transparent 70%),
-        radial-gradient(40% 42% at 74% 68%, color-mix(in srgb, var(--theme-secondary) 13%, transparent), transparent 70%),
-        radial-gradient(34% 34% at 62% 18%, color-mix(in srgb, var(--theme-accent) 9%, transparent), transparent 72%);
-      animation: cardAurora 20s ease-in-out infinite alternate;
+        radial-gradient(38% 34% at 24% 28%, rgba(236, 72, 153, 0.62), transparent 68%),
+        radial-gradient(42% 38% at 72% 22%, rgba(124, 58, 237, 0.60), transparent 68%),
+        radial-gradient(40% 40% at 78% 72%, rgba(59, 130, 246, 0.58), transparent 68%),
+        radial-gradient(36% 36% at 26% 76%, rgba(6, 182, 212, 0.55), transparent 68%);
+      animation: colorFlow 16s ease-in-out infinite alternate;
       will-change: transform;
     }
 
-    /* Gentle light sweep passing across the form */
+    /* Second layer moving the opposite way for continuous blending */
     .login-card::after {
       content: '';
       position: absolute;
-      top: -60%;
-      right: -25%;
-      width: 55%;
-      height: 220%;
+      inset: -50%;
       z-index: -1;
-      background: linear-gradient(105deg, transparent 42%, color-mix(in srgb, var(--theme-primary) 8%, transparent) 50%, transparent 58%);
-      animation: cardSheen 11s ease-in-out infinite;
-      will-change: transform, opacity;
+      background:
+        radial-gradient(30% 30% at 50% 50%, rgba(168, 85, 247, 0.45), transparent 70%),
+        radial-gradient(26% 26% at 70% 40%, rgba(236, 72, 153, 0.35), transparent 70%),
+        radial-gradient(24% 24% at 30% 60%, rgba(59, 130, 246, 0.38), transparent 70%);
+      animation: colorBlend 11s ease-in-out infinite alternate-reverse;
+      will-change: transform;
     }
 
-    @keyframes cardAurora {
-      0%   { transform: translate3d(0, 0, 0) scale(1); }
-      50%  { transform: translate3d(4%, -3%, 0) scale(1.07) rotate(4deg); }
-      100% { transform: translate3d(-3%, 4%, 0) scale(1.03) rotate(-3deg); }
+    @keyframes colorFlow {
+      0%   { transform: translate3d(0, 0, 0) scale(1) rotate(0deg); }
+      33%  { transform: translate3d(6%, -4%, 0) scale(1.12) rotate(6deg); }
+      66%  { transform: translate3d(-5%, 5%, 0) scale(1.05) rotate(-5deg); }
+      100% { transform: translate3d(3%, -2%, 0) scale(1.15) rotate(3deg); }
     }
 
-    @keyframes cardSheen {
-      0%        { transform: translateX(0) rotate(12deg); opacity: 0; }
-      30%       { opacity: 1; }
-      65%, 100% { transform: translateX(-160%) rotate(12deg); opacity: 0; }
+    @keyframes colorBlend {
+      0%   { transform: translate3d(-4%, 3%, 0) scale(1.08) rotate(-4deg); }
+      50%  { transform: translate3d(5%, -5%, 0) scale(1.16) rotate(5deg); }
+      100% { transform: translate3d(-2%, 4%, 0) scale(1.02) rotate(-6deg); }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -256,41 +257,45 @@ import { ThemeService } from '../../core/services/theme.service';
       max-width: 110px;
       max-height: 74px;
       margin-bottom: 18px;
-      filter: drop-shadow(0 6px 16px color-mix(in srgb, var(--theme-primary) 30%, transparent));
+      filter: drop-shadow(0 6px 16px rgba(0,0,0,0.45));
     }
-    .login-header h1 { margin: 0 0 6px 0; font-size: 1.25rem; color: var(--theme-text); font-weight: 800; }
-    .login-header p { color: var(--theme-text-muted); margin: 0; font-size: 0.88rem; }
+    .login-header h1 { margin: 0 0 6px 0; font-size: 1.25rem; color: #ffffff; font-weight: 800; text-shadow: 0 2px 12px rgba(0,0,0,0.4); }
+    .login-header p { color: rgba(255,255,255,0.85); margin: 0; font-size: 0.88rem; text-shadow: 0 1px 8px rgba(0,0,0,0.4); }
 
     .form-group { margin-bottom: 20px; }
     .form-group label {
       display: block;
       margin-bottom: 8px;
       font-weight: 700;
-      color: var(--theme-text);
+      color: #ffffff;
       font-size: 0.88rem;
+      text-shadow: 0 1px 8px rgba(0,0,0,0.45);
     }
     .form-group input {
       width: 100%;
       padding: 13px 16px;
-      border: 1.5px solid var(--theme-border);
+      border: 1.5px solid rgba(255,255,255,0.55);
       border-radius: 12px;
       font-size: 0.95rem;
       transition: all 0.25s var(--ease-smooth);
       box-sizing: border-box;
-      background: var(--theme-surface);
-      color: var(--theme-text);
+      background: rgba(255,255,255,0.93);
+      color: #1e1b4b;
     }
+    .form-group input::placeholder { color: rgba(30,27,75,0.45); }
     .form-group input:focus {
       outline: none;
-      border-color: var(--theme-primary);
-      box-shadow: 0 0 0 4px color-mix(in srgb, var(--theme-primary) 12%, transparent);
+      border-color: #ffffff;
+      background: #ffffff;
+      box-shadow: 0 0 0 4px rgba(255,255,255,0.25);
     }
     .form-group input::placeholder { color: var(--theme-text-muted); }
 
     .btn-submit {
       width: 100%;
       padding: 14px;
-      color: white;
+      color: #4c1d95;
+      background: #ffffff;
       border: none;
       border-radius: 12px;
       font-size: 1rem;
@@ -302,35 +307,43 @@ import { ThemeService } from '../../core/services/theme.service';
       align-items: center;
       justify-content: center;
       gap: 10px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.4);
     }
+    .btn-submit:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.45), 0 0 24px rgba(236,72,153,0.5);
+    }
+    .btn-submit:disabled { opacity: 0.75; cursor: not-allowed; }
 
     .spinner {
       width: 16px; height: 16px;
-      border: 2.5px solid rgba(255,255,255,0.35);
-      border-top-color: #fff;
+      border: 2.5px solid rgba(76,29,149,0.25);
+      border-top-color: #4c1d95;
       border-radius: 50%;
       animation: spin 0.7s linear infinite;
     }
 
     .error-message {
-      color: var(--theme-error);
+      color: #ffffff;
       font-size: 0.85rem;
       margin-bottom: 16px;
       text-align: center;
       padding: 10px;
-      background: color-mix(in srgb, var(--theme-error) 9%, transparent);
+      background: rgba(239,68,68,0.4);
       border-radius: 10px;
-      border: 1px solid color-mix(in srgb, var(--theme-error) 22%, transparent);
+      border: 1px solid rgba(255,255,255,0.35);
     }
 
-    .login-footer { text-align: center; margin-top: 26px; font-size: 0.9rem; color: var(--theme-text-secondary); }
+    .login-footer { text-align: center; margin-top: 26px; font-size: 0.9rem; color: rgba(255,255,255,0.85); text-shadow: 0 1px 8px rgba(0,0,0,0.4); }
     .login-footer a {
-      color: var(--theme-primary);
+      color: #ffffff;
       text-decoration: none;
       font-weight: 800;
+      text-decoration: underline;
+      text-underline-offset: 3px;
       transition: all 0.2s ease;
     }
-    .login-footer a:hover { text-decoration: underline; }
+    .login-footer a:hover { color: #fbcfe8; }
 
     @media (max-width: 860px) {
       .brand-panel { display: none; }
