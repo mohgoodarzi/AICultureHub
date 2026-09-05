@@ -264,3 +264,15 @@ public class AdminAnswerDto
     public bool IsCorrect { get; set; }
     public int OrderIndex { get; set; }
 }
+// ===== Course feedback statistics =====
+
+public class CourseFeedbackStatsDto
+{
+    public int CourseId { get; set; }
+    public string CourseTitle { get; set; } = string.Empty;
+    public string? CategoryName { get; set; }
+    public int LikeCount { get; set; }
+    public int DislikeCount { get; set; }
+    public int TotalVotes => LikeCount + DislikeCount;
+    public int SatisfactionPercentage => TotalVotes > 0 ? (int)Math.Round((double)LikeCount / TotalVotes * 100) : 0;
+}

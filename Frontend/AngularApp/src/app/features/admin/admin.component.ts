@@ -38,7 +38,8 @@ export class CompactJoinPipe implements PipeTransform {
       <div class="admin-tabs animate-fade-up delay-1">
         <button [class.active]="activeTab === 'analytics'" (click)="activeTab = 'analytics'"><span class="tab-ico">📊</span>آمار</button>
         <button [class.active]="activeTab === 'articles'" (click)="activeTab = 'articles'; loadArticles()"><span class="tab-ico">📝</span>مقالات</button>
-        <button [class.active]="activeTab === 'feedback'" (click)="activeTab = 'feedback'; loadFeedbackStats()"><span class="tab-ico">💬</span>بازخورد</button>
+        <button [class.active]="activeTab === 'feedback'" (click)="activeTab = 'feedback'; loadFeedbackStats()"><span class="tab-ico">💬</span>بازخورد مقالات</button>
+        <button [class.active]="activeTab === 'coursefeedback'" (click)="activeTab = 'coursefeedback'; loadCourseFeedbackStats()"><span class="tab-ico">🎓</span>بازخورد دوره‌ها</button>
         <button [class.active]="activeTab === 'categories'" (click)="activeTab = 'categories'; loadAllCategories()"><span class="tab-ico">🗂</span>دسته‌بندی‌ها</button>
         <button [class.active]="activeTab === 'courses'" (click)="activeTab = 'courses'; loadCourses()"><span class="tab-ico">🎓</span>دوره‌ها</button>
         <button [class.active]="activeTab === 'quizzes'" (click)="activeTab = 'quizzes'; loadAdminQuizzes()"><span class="tab-ico">🧪</span>آزمون‌ها</button>
@@ -106,6 +107,70 @@ export class CompactJoinPipe implements PipeTransform {
               </td>
             </tr>
             <tr *ngIf="feedbackStats.length === 0">
+              <td colspan="6" style="text-align: center; color: var(--theme-text-muted);">داده‌ای وجود ندارد</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Course Feedback Statistics Section -->
+      <div class="crud-section" *ngIf="activeTab === 'coursefeedback'">
+        <div class="crud-header">
+          <h3>🎓 آمار بازخورد دوره‌ها</h3>
+          <button class="btn-primary" (click)="loadCourseFeedbackStats()">🔄 بروزرسانی</button>
+        </div>
+
+        <div class="stats-grid" style="margin-bottom: 20px;">
+          <div class="stat-card">
+            <div class="stat-value">{{ courseTotalLikes }}</div>
+            <div class="stat-label">مجموع لایک‌ها</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">{{ courseTotalDislikes }}</div>
+            <div class="stat-label">مجموع دیسلایک‌ها</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">{{ courseTotalVotes }}</div>
+            <div class="stat-label">مجموع آرا</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" [style.color]="courseOverallSatisfaction >= 70 ? 'var(--theme-success)' : courseOverallSatisfaction >= 40 ? 'var(--theme-warning)' : 'var(--theme-error)'">
+              {{ courseOverallSatisfaction }}%
+            </div>
+            <div class="stat-label">رضایت کلی</div>
+          </div>
+        </div>
+
+        <table class="crud-table">
+          <thead>
+            <tr>
+              <th>دوره</th>
+              <th>دسته‌بندی</th>
+              <th>لایک</th>
+              <th>دیسلایک</th>
+              <th>مجموع</th>
+              <th>رضایت</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of courseFeedbackStats">
+              <td>{{ item.courseTitle }}</td>
+              <td>{{ item.categoryName || '-' }}</td>
+              <td><span style="color: #ef4444;">{{ item.likeCount }}</span></td>
+              <td><span style="color: #f59e0b;">{{ item.dislikeCount }}</span></td>
+              <td>{{ item.totalVotes }}</td>
+              <td>
+                <div class="satisfaction-cell">
+                  <div class="satisfaction-bar-mini">
+                    <div class="satisfaction-fill-mini" [style.width.%]="item.satisfactionPercentage"></div>
+                  </div>
+                  <span [style.color]="item.satisfactionPercentage >= 70 ? 'var(--theme-success)' : item.satisfactionPercentage >= 40 ? 'var(--theme-warning)' : 'var(--theme-error)'">
+                    {{ item.satisfactionPercentage }}%
+                  </span>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="courseFeedbackStats.length === 0">
               <td colspan="6" style="text-align: center; color: var(--theme-text-muted);">داده‌ای وجود ندارد</td>
             </tr>
           </tbody>
@@ -1762,6 +1827,12 @@ export class AdminComponent implements OnInit {
   totalVotes = 0;
   overallSatisfaction = 0;
 
+  courseFeedbackStats: any[] = [];
+  courseTotalLikes = 0;
+  courseTotalDislikes = 0;
+  courseTotalVotes = 0;
+  courseOverallSatisfaction = 0;
+
   showOrgModal = false;
   editingOrgKind: 'unit' | 'position' = 'unit';
   editingOrgId: number | null = null;
@@ -1888,6 +1959,19 @@ export class AdminComponent implements OnInit {
         this.overallSatisfaction = this.totalVotes > 0 ? Math.round((this.totalLikes / this.totalVotes) * 100) : 0;
       },
       error: (err) => console.error('Failed to load feedback stats:', err)
+    });
+  }
+
+  loadCourseFeedbackStats(): void {
+    this.http.get<any[]>(`${this.apiUrl}/courses/feedback-stats`).subscribe({
+      next: (data) => {
+        this.courseFeedbackStats = data || [];
+        this.courseTotalLikes = this.courseFeedbackStats.reduce((sum: number, item: any) => sum + item.likeCount, 0);
+        this.courseTotalDislikes = this.courseFeedbackStats.reduce((sum: number, item: any) => sum + item.dislikeCount, 0);
+        this.courseTotalVotes = this.courseTotalLikes + this.courseTotalDislikes;
+        this.courseOverallSatisfaction = this.courseTotalVotes > 0 ? Math.round((this.courseTotalLikes / this.courseTotalVotes) * 100) : 0;
+      },
+      error: (err) => console.error('Failed to load course feedback stats:', err)
     });
   }
 

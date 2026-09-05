@@ -158,6 +158,75 @@ public class CourseService : ICourseService
     }
 
     private static string GenerateSlug(string title) => title.ToLowerInvariant().Replace(" ", "-").Replace("'", "").Replace("\"", "") + "-" + DateTime.UtcNow.Ticks.ToString()[10..];
+
+    // ===== Feedback (like/dislike) — mirrors the article voting system =====
+
+    public async Task<VoteResult> VoteAsync(int courseId, bool isLike, int userId)
+    {
+        var course = await _context.Courses.FindAsync(courseId);
+        if (course == null || !course.IsActive) return new VoteResult { LikeCount = 0, DislikeCount = 0, UserVote = null };
+
+        var existing = await _context.CourseFeedbacks.FirstOrDefaultAsync(cf => cf.CourseId == courseId && cf.UserId == userId);
+
+        if (existing != null)
+        {
+            if (existing.IsLike == isLike)
+            {
+                // Same vote again -> remove (toggle off)
+                _context.CourseFeedbacks.Remove(existing);
+                await _context.SaveChangesAsync();
+            }
+            else
+            {
+                existing.IsLike = isLike;
+                existing.CreatedDate = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+            }
+        }
+        else
+        {
+            _context.CourseFeedbacks.Add(new CourseFeedback { CourseId = courseId, UserId = userId, IsLike = isLike, CreatedDate = DateTime.UtcNow });
+            await _context.SaveChangesAsync();
+        }
+
+        var counts = await GetVoteCountsAsync(courseId);
+        var myVote = await _context.CourseFeedbacks.FirstOrDefaultAsync(cf => cf.CourseId == courseId && cf.UserId == userId);
+        return new VoteResult { LikeCount = counts.like, DislikeCount = counts.dislike, UserVote = myVote?.IsLike };
+    }
+
+    public async Task<VoteResult> GetVoteResultAsync(int courseId, int? userId = null)
+    {
+        var counts = await GetVoteCountsAsync(courseId);
+        bool? userVote = null;
+        if (userId.HasValue)
+        {
+            var mine = await _context.CourseFeedbacks.FirstOrDefaultAsync(cf => cf.CourseId == courseId && cf.UserId == userId.Value);
+            userVote = mine?.IsLike;
+        }
+        return new VoteResult { LikeCount = counts.like, DislikeCount = counts.dislike, UserVote = userVote };
+    }
+
+    public async Task<List<CourseFeedbackStatsDto>> GetFeedbackStatsAsync()
+    {
+        return await _context.Courses
+            .Where(c => c.IsActive)
+            .Select(c => new CourseFeedbackStatsDto
+            {
+                CourseId = c.Id,
+                CourseTitle = c.Title,
+                CategoryName = c.Category != null ? c.Category.Name : null,
+                LikeCount = _context.CourseFeedbacks.Count(cf => cf.CourseId == c.Id && cf.IsLike),
+                DislikeCount = _context.CourseFeedbacks.Count(cf => cf.CourseId == c.Id && !cf.IsLike)
+            })
+            .ToListAsync();
+    }
+
+    private async Task<(int like, int dislike)> GetVoteCountsAsync(int courseId)
+    {
+        var like = await _context.CourseFeedbacks.CountAsync(cf => cf.CourseId == courseId && cf.IsLike);
+        var dislike = await _context.CourseFeedbacks.CountAsync(cf => cf.CourseId == courseId && !cf.IsLike);
+        return (like, dislike);
+    }
 }
 
 public class QuizService : IQuizService

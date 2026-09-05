@@ -135,6 +135,33 @@ public class CoursesController : ControllerBase
         return Ok(lesson);
     }
 
+    [Authorize]
+    [HttpPost("{id}/vote")]
+    public async Task<IActionResult> Vote(int id, [FromBody] CreateVoteRequest request)
+    {
+        var userId = GetCurrentUserId();
+        if (userId == null) return Unauthorized();
+        var result = await _courseService.VoteAsync(id, request.IsLike, userId.Value);
+        return Ok(result);
+    }
+
+    [Authorize]
+    [HttpGet("{id}/vote-status")]
+    public async Task<IActionResult> GetVoteStatus(int id)
+    {
+        var userId = GetCurrentUserId();
+        var result = await _courseService.GetVoteResultAsync(id, userId);
+        return Ok(result);
+    }
+
+    [Authorize]
+    [HttpGet("feedback-stats")]
+    public async Task<IActionResult> GetFeedbackStats()
+    {
+        var stats = await _courseService.GetFeedbackStatsAsync();
+        return Ok(stats);
+    }
+
     private int? GetCurrentUserId()
     {
         var claim = User.FindFirst(ClaimTypes.NameIdentifier);

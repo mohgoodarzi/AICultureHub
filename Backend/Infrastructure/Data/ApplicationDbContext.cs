@@ -168,7 +168,20 @@ public DbSet<AiPolicyItem> AiPolicyItems => Set<AiPolicyItem>();
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
-        modelBuilder.Entity<UserProgress>(entity =>
+        modelBuilder.Entity<CourseFeedback>(entity =>
+        {
+            // One vote per user per course (prevents duplicate feedback records)
+            entity.HasIndex(e => new { e.CourseId, e.UserId }).IsUnique();
+            entity.HasOne(cf => cf.Course)
+                  .WithMany()
+                  .HasForeignKey(cf => cf.CourseId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(cf => cf.User)
+                  .WithMany()
+                  .HasForeignKey(cf => cf.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+     modelBuilder.Entity<UserProgress>(entity =>
         {
             entity.HasOne(up => up.User)
                   .WithMany(u => u.Progress)

@@ -48,4 +48,18 @@ export class CourseService {
   getLesson(lessonId: number): Observable<LessonDto> {
     return this.http.get<LessonDto>(`${this.API_URL}/lessons/${lessonId}`);
   }
+
+  vote(id: number, isLike: boolean): Observable<VoteResult> {
+    return this.http.post<VoteResult>(`${this.API_URL}/${id}/vote`, { isLike });
+  }
+
+  getVoteStatus(id: number): Observable<VoteResult> {
+    return this.http.get<VoteResult>(`${this.API_URL}/${id}/vote-status`);
+  }
+}
+
+export interface VoteResult {
+  likeCount: number;
+  dislikeCount: number;
+  userVote: boolean | null;
 }

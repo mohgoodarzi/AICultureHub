@@ -25,7 +25,8 @@ import { CourseListDto } from '../../core/models/course.model';
       </div>
 
       <div class="courses-grid">
-        <a *ngFor="let course of courses" [routerLink]="['/courses', course.slug]" class="course-card animate-pop">
+        <div *ngFor="let course of courses" class="course-card-wrapper">
+          <a [routerLink]="['/courses', course.slug]" class="course-card animate-pop">
           <div class="course-thumb" [class.featured-thumb]="course.isFeatured">
             <div class="thumb-pattern"></div>
             <span *ngIf="!course.thumbnailUrl" class="thumb-emoji">📚</span>
@@ -46,6 +47,16 @@ import { CourseListDto } from '../../core/models/course.model';
             <span class="course-cta">مشاهده دوره ←</span>
           </div>
         </a>
+        <div class="course-voting-mini">
+          <button class="vote-mini like" [class.active]="userVotes[course.id] === true" (click)="vote($event, course.id, true)" title="پسندیدم">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            <span>{{ course.likeCount || 0 }}</span>
+          </button>
+          <button class="vote-mini dislike" [class.active]="userVotes[course.id] === false" (click)="vote($event, course.id, false)" title="نپسندیدم">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" transform="rotate(180 12 12)"/></svg>
+            <span>{{ course.dislikeCount || 0 }}</span>
+          </button>
+        </div>
       </div>
 
       <div class="pagination" *ngIf="totalCount > pageSize">
@@ -80,6 +91,13 @@ import { CourseListDto } from '../../core/models/course.model';
     }
 
     .courses-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+    .course-card-wrapper { display: flex; flex-direction: column; }
+    .course-card { flex: 1; }
+    .course-voting-mini { display: flex; gap: 8px; padding: 10px 0; justify-content: center; }
+    .vote-mini { display: flex; align-items: center; gap: 4px; padding: 6px 12px; border: 1px solid var(--theme-border); border-radius: 20px; background: var(--theme-surface); cursor: pointer; font-size: 0.8rem; color: var(--theme-text-muted); transition: all 0.2s ease; font-family: inherit; }
+    .vote-mini:hover { transform: scale(1.05); }
+    .vote-mini.like:hover, .vote-mini.like.active { background: #fef2f2; border-color: #ef4444; color: #ef4444; }
+    .vote-mini.dislike:hover, .vote-mini.dislike.active { background: #fef9e7; border-color: #f59e0b; color: #f59e0b; }
 
     .course-card {
       background: var(--theme-surface);
@@ -212,6 +230,7 @@ export class CourseListComponent implements OnInit {
   pageSize = 9;
   totalCount = 0;
   totalPages = 0;
+  userVotes: { [courseId: number]: boolean | null } = {};
 
   constructor(private courseService: CourseService) {}
 
@@ -219,7 +238,35 @@ export class CourseListComponent implements OnInit {
 
   loadCourses(): void {
     this.courseService.getCourses(this.currentPage, this.pageSize, this.searchTerm).subscribe({
-      next: (result) => { this.courses = result.items; this.totalCount = result.totalCount; this.totalPages = result.totalPages; }
+      next: (result) => {
+        this.courses = result.items;
+        this.totalCount = result.totalCount;
+        this.totalPages = result.totalPages;
+        this.loadVoteStatuses();
+      }
+    });
+  }
+
+  loadVoteStatuses(): void {
+    this.courses.forEach(course => {
+      this.courseService.getVoteStatus(course.id).subscribe({
+        next: (result) => { this.userVotes[course.id] = result.userVote; course.likeCount = result.likeCount; course.dislikeCount = result.dislikeCount; }
+      });
+    });
+  }
+
+  vote(event: Event, courseId: number, isLike: boolean): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.courseService.vote(courseId, isLike).subscribe({
+      next: (result) => {
+        this.userVotes[courseId] = result.userVote;
+        const course = this.courses.find(c => c.id === courseId);
+        if (course) { course.likeCount = result.likeCount; course.dislikeCount = result.dislikeCount; }
+      },
+      error: (err) => {
+        if (err.status === 401) alert('لطفاً وارد شوید');
+      }
     });
   }
 

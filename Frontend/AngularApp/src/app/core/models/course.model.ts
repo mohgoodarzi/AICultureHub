@@ -11,6 +11,8 @@ export interface CourseDto {
   category?: CategoryDto;
   lessonCount: number;
   enrolledCount: number;
+  likeCount?: number;
+  dislikeCount?: number;
   completionCount: number;
   averageRating?: number;
   isPublished: boolean;
@@ -32,6 +34,8 @@ export interface CourseListDto {
   categoryName: string;
   lessonCount: number;
   enrolledCount: number;
+  likeCount?: number;
+  dislikeCount?: number;
   averageRating?: number;
   isFeatured: boolean;
 }

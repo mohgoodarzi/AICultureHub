@@ -14,6 +14,11 @@ public interface ICourseService
     Task<bool> EnrollInCourseAsync(int courseId, int userId);
     Task<bool> CompleteLessonAsync(int lessonId, int userId);
     Task<LessonDto?> GetLessonAsync(int lessonId, int userId);
+
+    // Feedback (like/dislike) — mirrors the article voting system
+    Task<VoteResult> VoteAsync(int courseId, bool isLike, int userId);
+    Task<VoteResult> GetVoteResultAsync(int courseId, int? userId = null);
+    Task<List<CourseFeedbackStatsDto>> GetFeedbackStatsAsync();
 }
 
 public interface IQuizService
