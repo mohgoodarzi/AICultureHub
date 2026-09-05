@@ -195,3 +195,72 @@ public class QuizAnswerSubmission
     public int QuestionId { get; set; }
     public int? SelectedAnswerId { get; set; }
 }
+
+// ===== Admin quiz management =====
+
+public class SaveQuizRequest
+{
+    public string Title { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public int? CategoryId { get; set; }
+    public int? CourseId { get; set; }
+    public string Difficulty { get; set; } = "Beginner";
+    public int TimeLimit { get; set; } = 30;
+    public int PassingScore { get; set; } = 70;
+    public int Points { get; set; } = 50;
+    public bool IsPublished { get; set; }
+    public List<SaveQuestionDto> Questions { get; set; } = new();
+}
+
+public class SaveQuestionDto
+{
+    public string QuestionText { get; set; } = string.Empty;
+    public string QuestionType { get; set; } = "MultipleChoice";
+    public string? Explanation { get; set; }
+    public int Points { get; set; } = 10;
+    public string? ImageUrl { get; set; }
+    public List<SaveAnswerDto> Answers { get; set; } = new();
+}
+
+public class SaveAnswerDto
+{
+    public string AnswerText { get; set; } = string.Empty;
+    public bool IsCorrect { get; set; }
+}
+
+public class AdminQuizDto
+{
+    public int Id { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public int? CategoryId { get; set; }
+    public string? CategoryName { get; set; }
+    public int? CourseId { get; set; }
+    public string Difficulty { get; set; } = "Beginner";
+    public int TimeLimit { get; set; }
+    public int PassingScore { get; set; }
+    public int Points { get; set; }
+    public int QuestionCount { get; set; }
+    public bool IsPublished { get; set; }
+    public List<AdminQuestionDto> Questions { get; set; } = new();
+}
+
+public class AdminQuestionDto
+{
+    public int Id { get; set; }
+    public string QuestionText { get; set; } = string.Empty;
+    public string QuestionType { get; set; } = "MultipleChoice";
+    public string? Explanation { get; set; }
+    public int Points { get; set; }
+    public int OrderIndex { get; set; }
+    public string? ImageUrl { get; set; }
+    public List<AdminAnswerDto> Answers { get; set; } = new();
+}
+
+public class AdminAnswerDto
+{
+    public int Id { get; set; }
+    public string AnswerText { get; set; } = string.Empty;
+    public bool IsCorrect { get; set; }
+    public int OrderIndex { get; set; }
+}

@@ -41,6 +41,7 @@ export class CompactJoinPipe implements PipeTransform {
         <button [class.active]="activeTab === 'feedback'" (click)="activeTab = 'feedback'; loadFeedbackStats()"><span class="tab-ico">💬</span>بازخورد</button>
         <button [class.active]="activeTab === 'categories'" (click)="activeTab = 'categories'; loadAllCategories()"><span class="tab-ico">🗂</span>دسته‌بندی‌ها</button>
         <button [class.active]="activeTab === 'courses'" (click)="activeTab = 'courses'; loadCourses()"><span class="tab-ico">🎓</span>دوره‌ها</button>
+        <button [class.active]="activeTab === 'quizzes'" (click)="activeTab = 'quizzes'; loadAdminQuizzes()"><span class="tab-ico">🧪</span>آزمون‌ها</button>
         <button [class.active]="activeTab === 'users'" (click)="activeTab = 'users'"><span class="tab-ico">👥</span>کاربران</button>
         <button [class.active]="activeTab === 'org'" (click)="activeTab = 'org'; loadOrgData()"><span class="tab-ico">🏢</span>واحدها و سمت‌ها</button>
         <button [class.active]="activeTab === 'roles'" (click)="activeTab = 'roles'; loadRoles()"><span class="tab-ico">🔑</span>نقش‌ها</button>
@@ -220,6 +221,151 @@ export class CompactJoinPipe implements PipeTransform {
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- Quizzes Management Section -->
+      <div class="crud-section" *ngIf="activeTab === 'quizzes'">
+        <div class="crud-header">
+          <h3>🧪 مدیریت آزمون‌ها</h3>
+          <button class="btn-primary" (click)="openQuizModal()">+ آزمون جدید</button>
+        </div>
+
+        <table class="crud-table">
+          <thead>
+            <tr>
+              <th>عنوان</th>
+              <th>دسته‌بندی</th>
+              <th>سطح</th>
+              <th>تعداد سوالات</th>
+              <th>زمان</th>
+              <th>وضعیت</th>
+              <th>عملیات</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let quiz of adminQuizzes">
+              <td>{{ quiz.title }}</td>
+              <td>{{ quiz.categoryName || '-' }}</td>
+              <td>{{ quiz.difficulty }}</td>
+              <td>{{ quiz.questionCount }}</td>
+              <td>{{ quiz.timeLimit }} دقیقه</td>
+              <td>
+                <span class="status-badge" [class.published]="quiz.isPublished">
+                  {{ quiz.isPublished ? 'منتشر شده' : 'پیش‌نویس' }}
+                </span>
+              </td>
+              <td class="actions">
+                <button class="btn-edit" (click)="editQuiz(quiz)">ویرایش</button>
+                <button class="btn-delete" (click)="deleteQuiz(quiz.id)">حذف</button>
+              </td>
+            </tr>
+            <tr *ngIf="adminQuizzes.length === 0">
+              <td colspan="7" style="text-align:center;color:var(--theme-text-muted)">آزمونی وجود ندارد</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Quiz Editor Modal -->
+      <div class="modal" *ngIf="showQuizModal">
+        <div class="modal-content modal-large">
+          <div class="modal-header">
+            <h3>{{ editingQuiz ? 'ویرایش آزمون' : 'آزمون جدید' }}</h3>
+            <button class="btn-close" (click)="closeQuizModal()">×</button>
+          </div>
+          <form (ngSubmit)="saveQuiz()">
+            <div class="form-row">
+              <div class="form-group">
+                <label>عنوان آزمون <span class="required">*</span></label>
+                <input type="text" [(ngModel)]="quizForm.title" name="qtitle" required>
+              </div>
+              <div class="form-group">
+                <label>دسته‌بندی</label>
+                <select [(ngModel)]="quizForm.categoryId" name="qcat">
+                  <option [ngValue]="null">بدون دسته‌بندی</option>
+                  <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>توضیحات</label>
+              <textarea [(ngModel)]="quizForm.description" name="qdesc" rows="2"></textarea>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>سطح دشواری</label>
+                <select [(ngModel)]="quizForm.difficulty" name="qdiff">
+                  <option value="Beginner">مقدماتی</option>
+                  <option value="Intermediate">متوسط</option>
+                  <option value="Advanced">پیشرفته</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>زمان (دقیقه)</label>
+                <input type="number" [(ngModel)]="quizForm.timeLimit" name="qtime" min="1">
+              </div>
+              <div class="form-group">
+                <label>نمره قبولی (%)</label>
+                <input type="number" [(ngModel)]="quizForm.passingScore" name="qpass" min="1" max="100">
+              </div>
+              <div class="form-group">
+                <label>امتیاز کل</label>
+                <input type="number" [(ngModel)]="quizForm.points" name="qpoints" min="1">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" [(ngModel)]="quizForm.isPublished" name="qpub">
+                منتشر شده (قابل مشاهده برای کاربران)
+              </label>
+            </div>
+
+            <div class="quiz-questions-editor">
+              <div class="qq-header">
+                <h4>سوالات ({{ quizForm.questions.length }})</h4>
+                <button type="button" class="btn-primary" (click)="addQuizQuestion()">+ سوال جدید</button>
+              </div>
+
+              <div class="qq-card" *ngFor="let q of quizForm.questions; let qi = index">
+                <div class="qq-head">
+                  <strong>سوال {{ qi + 1 }}</strong>
+                  <button type="button" class="btn-delete" (click)="removeQuizQuestion(qi)">حذف سوال</button>
+                </div>
+                <div class="form-group">
+                  <label>متن سوال <span class="required">*</span></label>
+                  <textarea [(ngModel)]="q.questionText" name="qtext{{qi}}" rows="2" required></textarea>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>امتیاز سوال</label>
+                    <input type="number" [(ngModel)]="q.points" name="qpts{{qi}}" min="1">
+                  </div>
+                  <div class="form-group" style="flex:2;">
+                    <label>توضیح پاسخ (اختیاری — بعد از آزمون نمایش داده می‌شود)</label>
+                    <input type="text" [(ngModel)]="q.explanation" name="qexp{{qi}}">
+                  </div>
+                </div>
+                <div class="qq-answers">
+                  <label class="qq-answers-label">گزینه‌ها (گزینه صحیح را انتخاب کنید):</label>
+                  <div class="qq-answer" *ngFor="let a of q.answers; let ai = index">
+                    <label class="radio-label">
+                      <input type="radio" [name]="'correct' + qi" [value]="ai" [(ngModel)]="q.correctIndex">
+                      <span class="radio-mark"></span>
+                    </label>
+                    <input type="text" [(ngModel)]="a.answerText" name="ans{{qi}}_{{ai}}" placeholder="متن گزینه {{ ai + 1 }}">
+                    <button type="button" class="btn-delete" (click)="removeQuizAnswer(q, ai)" [disabled]="q.answers.length <= 2">×</button>
+                  </div>
+                  <button type="button" class="btn-edit" (click)="addQuizAnswer(q)" [disabled]="q.answers.length >= 6">+ گزینه</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" class="btn-cancel" (click)="closeQuizModal()">انصراف</button>
+              <button type="submit" class="btn-primary">ذخیره آزمون</button>
+            </div>
+          </form>
+        </div>
       </div>
 
       <!-- Users Section -->
@@ -1211,6 +1357,36 @@ export class CompactJoinPipe implements PipeTransform {
 
     .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
 
+    .quiz-questions-editor { margin-top: 10px; }
+    .qq-header { display: flex; justify-content: space-between; align-items: center; margin: 18px 0 12px 0; }
+    .qq-header h4 { margin: 0; font-weight: 800; color: var(--theme-text); }
+    .qq-card {
+      background: var(--theme-surface-hover);
+      border: 1px solid var(--theme-border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+    .qq-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .qq-head strong { color: var(--theme-primary); }
+    .qq-answers { margin-top: 8px; }
+    .qq-answers-label { display: block; font-weight: 700; font-size: 0.85rem; margin-bottom: 8px; color: var(--theme-text-secondary); }
+    .qq-answer { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .qq-answer input[type="text"] {
+      flex: 1;
+      padding: 9px 12px;
+      border: 1.5px solid var(--theme-border);
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      background: var(--theme-surface);
+      color: var(--theme-text);
+      box-sizing: border-box;
+    }
+    .qq-answer input[type="text"]:focus { outline: none; border-color: var(--theme-primary); }
+    .radio-label { display: flex; align-items: center; cursor: pointer; }
+    .radio-label input[type="radio"] { width: 18px; height: 18px; accent-color: var(--theme-primary); cursor: pointer; }
+
     .policy-hint { color: var(--theme-text-secondary); font-size: 0.85rem; margin: 0 0 14px 0; }
     .policy-order { display: flex; align-items: center; gap: 6px; justify-content: center; }
     .policy-order span { font-weight: 700; min-width: 20px; text-align: center; }
@@ -1528,6 +1704,15 @@ export class AdminComponent implements OnInit {
   policyItems: any[] = [];
   savingPolicy = false;
 
+  adminQuizzes: any[] = [];
+  showQuizModal = false;
+  editingQuiz: any = null;
+  quizForm: any = this.emptyQuizForm();
+
+  emptyQuizForm(): any {
+    return { title: '', description: '', categoryId: null, difficulty: 'Beginner', timeLimit: 30, passingScore: 70, points: 50, isPublished: false, questions: [] };
+  }
+
   uploadLimits: any = { maxImageSizeMB: 10, maxVideoSizeMB: 50 };
   uploadSettingsSaving = false;
 
@@ -1678,6 +1863,149 @@ export class AdminComponent implements OnInit {
   loadCourses(): void {
     this.http.get<any>(`${this.apiUrl}/courses?pageNumber=1&pageSize=100`).subscribe({
       next: (result) => this.courses = result.items || []
+    });
+  }
+
+  loadAdminQuizzes(): void {
+    this.http.get<any[]>(`${this.apiUrl}/quizzes/admin/all`).subscribe({
+      next: (data) => this.adminQuizzes = data || [],
+      error: (err) => console.error('Failed to load quizzes:', err)
+    });
+  }
+
+  openQuizModal(): void {
+    this.editingQuiz = null;
+    this.quizForm = this.emptyQuizForm();
+    this.addQuizQuestion();
+    this.loadCategories();
+    this.showQuizModal = true;
+  }
+
+  closeQuizModal(): void {
+    this.showQuizModal = false;
+    this.editingQuiz = null;
+  }
+
+  editQuiz(quiz: any): void {
+    this.http.get<any>(`${this.apiUrl}/quizzes/admin/${quiz.id}`).subscribe({
+      next: (detail) => {
+        this.editingQuiz = quiz;
+        this.quizForm = {
+          title: detail.title,
+          description: detail.description || '',
+          categoryId: detail.categoryId || null,
+          difficulty: detail.difficulty || 'Beginner',
+          timeLimit: detail.timeLimit,
+          passingScore: detail.passingScore,
+          points: detail.points,
+          isPublished: detail.isPublished,
+          questions: (detail.questions || []).map((q: any) => ({
+            questionText: q.questionText,
+            explanation: q.explanation || '',
+            points: q.points,
+            answers: (q.answers || []).map((a: any) => ({ answerText: a.answerText, isCorrect: a.isCorrect })),
+            correctIndex: Math.max(0, (q.answers || []).findIndex((a: any) => a.isCorrect))
+          }))
+        };
+        this.showQuizModal = true;
+      },
+      error: () => alert('خطا در بارگذاری آزمون')
+    });
+  }
+
+  addQuizQuestion(): void {
+    this.quizForm.questions.push({
+      questionText: '',
+      explanation: '',
+      points: 10,
+      answers: [
+        { answerText: '', isCorrect: false },
+        { answerText: '', isCorrect: false }
+      ],
+      correctIndex: 0
+    });
+  }
+
+  removeQuizQuestion(index: number): void {
+    if (this.quizForm.questions.length <= 1) {
+      alert('آزمون باید حداقل یک سوال داشته باشد');
+      return;
+    }
+    this.quizForm.questions.splice(index, 1);
+  }
+
+  addQuizAnswer(q: any): void {
+    if (q.answers.length >= 6) return;
+    q.answers.push({ answerText: '', isCorrect: false });
+  }
+
+  removeQuizAnswer(q: any, index: number): void {
+    if (q.answers.length <= 2) return;
+    q.answers.splice(index, 1);
+    if (q.correctIndex >= q.answers.length) q.correctIndex = 0;
+    else if (index < q.correctIndex) q.correctIndex = q.correctIndex - 1;
+  }
+
+  saveQuiz(): void {
+    if (!this.quizForm.title || !this.quizForm.title.trim()) {
+      alert('عنوان آزمون الزامی است');
+      return;
+    }
+    for (let i = 0; i < this.quizForm.questions.length; i++) {
+      const q = this.quizForm.questions[i];
+      if (!q.questionText || !q.questionText.trim()) {
+        alert(`متن سوال ${i + 1} الزامی است`);
+        return;
+      }
+      if (q.answers.filter((a: any) => a.answerText && a.answerText.trim()).length < 2) {
+        alert(`سوال ${i + 1} باید حداقل دو گزینه با متن داشته باشد`);
+        return;
+      }
+      if (q.correctIndex === null || q.correctIndex === undefined || q.correctIndex < 0) {
+        alert(`برای سوال ${i + 1} گزینه صحیح را انتخاب کنید`);
+        return;
+      }
+    }
+
+    const payload = {
+      title: this.quizForm.title.trim(),
+      description: this.quizForm.description || null,
+      categoryId: this.quizForm.categoryId || null,
+      difficulty: this.quizForm.difficulty,
+      timeLimit: this.quizForm.timeLimit || 30,
+      passingScore: this.quizForm.passingScore || 70,
+      points: this.quizForm.points || 50,
+      isPublished: !!this.quizForm.isPublished,
+      questions: this.quizForm.questions.map((q: any) => ({
+        questionText: q.questionText.trim(),
+        questionType: 'MultipleChoice',
+        explanation: q.explanation || null,
+        points: q.points || 10,
+        answers: q.answers
+          .filter((a: any) => a.answerText && a.answerText.trim())
+          .map((a: any, idx: number) => ({ answerText: a.answerText.trim(), isCorrect: idx === q.correctIndex, orderIndex: idx + 1 }))
+      }))
+    };
+
+    const req = this.editingQuiz
+      ? this.http.put<any>(`${this.apiUrl}/quizzes/admin/${this.editingQuiz.id}`, payload)
+      : this.http.post<any>(`${this.apiUrl}/quizzes/admin`, payload);
+
+    req.subscribe({
+      next: () => {
+        alert(this.editingQuiz ? 'آزمون با موفقیت بروزرسانی شد' : 'آزمون با موفقیت ایجاد شد');
+        this.closeQuizModal();
+        this.loadAdminQuizzes();
+      },
+      error: (err) => alert('خطا در ذخیره آزمون: ' + (err.error?.message || err.message))
+    });
+  }
+
+  deleteQuiz(id: number): void {
+    if (!confirm('آیا از حذف این آزمون اطمینان دارید؟ کاربران دیگر به آن دسترسی نخواهند داشت.')) return;
+    this.http.delete(`${this.apiUrl}/quizzes/admin/${id}`).subscribe({
+      next: () => this.loadAdminQuizzes(),
+      error: (err) => alert('خطا در حذف آزمون: ' + (err.error?.message || err.message))
     });
   }
 

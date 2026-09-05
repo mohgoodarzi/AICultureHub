@@ -223,6 +223,175 @@ public class QuizService : IQuizService
         return await _context.QuizAttempts.Where(qa => qa.UserId == userId).OrderByDescending(qa => qa.AttemptDate).Take(count)
             .Select(qa => new QuizAttemptResultDto { AttemptId = qa.Id, Score = qa.Score, MaxScore = qa.MaxScore, Percentage = qa.Percentage, CorrectAnswers = qa.CorrectAnswers, TotalQuestions = qa.TotalQuestions, IsPassed = qa.IsPassed, TimeSpentSeconds = qa.TimeSpentSeconds, PointsEarned = qa.PointsEarned, AttemptDate = qa.AttemptDate, QuestionResults = new List<QuestionResultDto>() })
             .ToListAsync();
+                }
+
+    // ===== Admin quiz management =====
+
+    public async Task<List<AdminQuizDto>> GetQuizzesForAdminAsync()
+    {
+        return await _context.Quizzes.Include(q => q.Category)
+            .Where(q => q.IsActive)
+            .OrderByDescending(q => q.Id)
+            .Select(q => new AdminQuizDto
+            {
+                Id = q.Id, Title = q.Title, Description = q.Description, CategoryId = q.CategoryId,
+                CategoryName = q.Category != null ? q.Category.Name : null, CourseId = q.CourseId,
+                Difficulty = q.Difficulty, TimeLimit = q.TimeLimit, PassingScore = q.PassingScore,
+                Points = q.Points, QuestionCount = q.Questions.Count(qn => qn.IsActive), IsPublished = q.IsPublished
+            })
+            .ToListAsync();
+    }
+
+    public async Task<AdminQuizDto?> GetQuizForAdminAsync(int id)
+    {
+        var quiz = await _context.Quizzes.Include(q => q.Category)
+            .Include(q => q.Questions.Where(qn => qn.IsActive)).ThenInclude(qn => qn.Answers)
+            .FirstOrDefaultAsync(q => q.Id == id && q.IsActive);
+        if (quiz == null) return null;
+        return new AdminQuizDto
+        {
+            Id = quiz.Id, Title = quiz.Title, Description = quiz.Description, CategoryId = quiz.CategoryId,
+            CategoryName = quiz.Category != null ? quiz.Category.Name : null, CourseId = quiz.CourseId,
+            Difficulty = quiz.Difficulty, TimeLimit = quiz.TimeLimit, PassingScore = quiz.PassingScore,
+            Points = quiz.Points, QuestionCount = quiz.Questions.Count(qn => qn.IsActive), IsPublished = quiz.IsPublished,
+            Questions = quiz.Questions.OrderBy(qn => qn.OrderIndex).Select(qn => new AdminQuestionDto
+            {
+                Id = qn.Id, QuestionText = qn.QuestionText, QuestionType = qn.QuestionType,
+                Explanation = qn.Explanation, Points = qn.Points, OrderIndex = qn.OrderIndex, ImageUrl = qn.ImageUrl,
+                Answers = qn.Answers.OrderBy(a => a.OrderIndex).Select(a => new AdminAnswerDto
+                {
+                    Id = a.Id, AnswerText = a.AnswerText, IsCorrect = a.IsCorrect, OrderIndex = a.OrderIndex
+                }).ToList()
+            }).ToList()
+        };
+    }
+
+    public async Task<AdminQuizDto> CreateQuizAsync(SaveQuizRequest request, int createdBy)
+    {
+        if (string.IsNullOrWhiteSpace(request.Title)) throw new InvalidOperationException("عنوان آزمون الزامی است");
+        if (request.Questions.Count == 0) throw new InvalidOperationException("حداقل یک سوال الزامی است");
+
+        var quiz = new Quiz
+        {
+            Title = request.Title.Trim(),
+            Description = request.Description,
+            CategoryId = request.CategoryId,
+            CourseId = request.CourseId,
+            Difficulty = request.Difficulty,
+            TimeLimit = request.TimeLimit,
+            PassingScore = request.PassingScore,
+            Points = request.Points,
+            IsPublished = request.IsPublished,
+            CreatedBy = createdBy,
+            IsActive = true,
+            CreatedDate = DateTime.UtcNow
+        };
+
+        foreach (var (qDto, qIdx) in request.Questions.Select((q, i) => (q, i)))
+        {
+            if (string.IsNullOrWhiteSpace(qDto.QuestionText)) continue;
+            var question = new Question
+            {
+                QuestionText = qDto.QuestionText.Trim(),
+                QuestionType = "MultipleChoice",
+                Explanation = qDto.Explanation,
+                Points = qDto.Points > 0 ? qDto.Points : 10,
+                OrderIndex = qIdx + 1,
+                ImageUrl = qDto.ImageUrl,
+                IsActive = true,
+                CreatedDate = DateTime.UtcNow
+            };
+            var aIdx = 0;
+            foreach (var aDto in qDto.Answers.Where(a => !string.IsNullOrWhiteSpace(a.AnswerText)))
+            {
+                question.Answers.Add(new Answer
+                {
+                    AnswerText = aDto.AnswerText.Trim(),
+                    IsCorrect = aDto.IsCorrect,
+                    OrderIndex = ++aIdx
+                });
+            }
+            if (question.Answers.Count < 2) throw new InvalidOperationException("هر سوال باید حداقل دو گزینه داشته باشد");
+            if (!question.Answers.Any(a => a.IsCorrect)) throw new InvalidOperationException($"سوال «{question.QuestionText}» باید یک پاسخ صحیح داشته باشد");
+            quiz.Questions.Add(question);
+        }
+
+        quiz.QuestionCount = quiz.Questions.Count;
+        _context.Quizzes.Add(quiz);
+        await _context.SaveChangesAsync();
+        await _auditService.LogAsync(createdBy, "CREATE_QUIZ", "Quiz", quiz.Id, $"Created quiz: {quiz.Title}");
+        return (await GetQuizForAdminAsync(quiz.Id))!;
+    }
+
+    public async Task<AdminQuizDto?> UpdateQuizAsync(int id, SaveQuizRequest request, int modifiedBy)
+    {
+        var quiz = await _context.Quizzes.Include(q => q.Questions).ThenInclude(qn => qn.Answers)
+            .FirstOrDefaultAsync(q => q.Id == id && q.IsActive);
+        if (quiz == null) return null;
+
+        if (string.IsNullOrWhiteSpace(request.Title)) throw new InvalidOperationException("عنوان آزمون الزامی است");
+        if (request.Questions.Count == 0) throw new InvalidOperationException("حداقل یک سوال الزامی است");
+
+        quiz.Title = request.Title.Trim();
+        quiz.Description = request.Description;
+        quiz.CategoryId = request.CategoryId;
+        quiz.CourseId = request.CourseId;
+        quiz.Difficulty = request.Difficulty;
+        quiz.TimeLimit = request.TimeLimit;
+        quiz.PassingScore = request.PassingScore;
+        quiz.Points = request.Points;
+        quiz.IsPublished = request.IsPublished;
+        quiz.ModifiedDate = DateTime.UtcNow;
+        quiz.ModifiedBy = modifiedBy;
+
+        // Replace-all strategy for questions (simplest correct approach for editing)
+        var oldQuestions = quiz.Questions.ToList();
+        _context.Questions.RemoveRange(oldQuestions);
+
+        foreach (var (qDto, qIdx) in request.Questions.Select((q, i) => (q, i)))
+        {
+            if (string.IsNullOrWhiteSpace(qDto.QuestionText)) continue;
+            var question = new Question
+            {
+                QuizId = quiz.Id,
+                QuestionText = qDto.QuestionText.Trim(),
+                QuestionType = "MultipleChoice",
+                Explanation = qDto.Explanation,
+                Points = qDto.Points > 0 ? qDto.Points : 10,
+                OrderIndex = qIdx + 1,
+                ImageUrl = qDto.ImageUrl,
+                IsActive = true,
+                CreatedDate = DateTime.UtcNow
+            };
+            var aIdx = 0;
+            foreach (var aDto in qDto.Answers.Where(a => !string.IsNullOrWhiteSpace(a.AnswerText)))
+            {
+                question.Answers.Add(new Answer
+                {
+                    AnswerText = aDto.AnswerText.Trim(),
+                    IsCorrect = aDto.IsCorrect,
+                    OrderIndex = ++aIdx
+                });
+            }
+            if (question.Answers.Count < 2) throw new InvalidOperationException("هر سوال باید حداقل دو گزینه داشته باشد");
+            if (!question.Answers.Any(a => a.IsCorrect)) throw new InvalidOperationException($"سوال «{question.QuestionText}» باید یک پاسخ صحیح داشته باشد");
+            quiz.Questions.Add(question);
+        }
+
+        quiz.QuestionCount = quiz.Questions.Count;
+        await _context.SaveChangesAsync();
+        await _auditService.LogAsync(modifiedBy, "UPDATE_QUIZ", "Quiz", quiz.Id, $"Updated quiz: {quiz.Title}");
+        return (await GetQuizForAdminAsync(quiz.Id))!;
+    }
+
+    public async Task<bool> DeleteQuizAsync(int id)
+    {
+        var quiz = await _context.Quizzes.FirstOrDefaultAsync(q => q.Id == id && q.IsActive);
+        if (quiz == null) return false;
+        quiz.IsActive = false;
+        quiz.ModifiedDate = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+        return true;
     }
 }
 

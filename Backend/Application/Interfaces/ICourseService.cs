@@ -22,6 +22,13 @@ public interface IQuizService
     Task<QuizDto?> GetQuizByIdAsync(int id);
     Task<QuizAttemptResultDto?> SubmitQuizAsync(int quizId, SubmitQuizRequest request, int userId);
     Task<List<QuizAttemptResultDto>> GetUserQuizHistoryAsync(int userId, int count = 10);
+
+    // Admin management
+    Task<List<AdminQuizDto>> GetQuizzesForAdminAsync();
+    Task<AdminQuizDto?> GetQuizForAdminAsync(int id);
+    Task<AdminQuizDto> CreateQuizAsync(SaveQuizRequest request, int createdBy);
+    Task<AdminQuizDto?> UpdateQuizAsync(int id, SaveQuizRequest request, int modifiedBy);
+    Task<bool> DeleteQuizAsync(int id);
 }
 
 public interface IChallengeService
