@@ -1,13 +1,15 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from './core/services/auth.service';
 import { ThemeService } from './core/services/theme.service';
+import { NotificationPopupComponent } from './core/components/notification-popup.component';
+import { filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule, NotificationPopupComponent],
   template: `
     <div class="app-container" *ngIf="auth.isLoggedIn(); else loginLayout">
       <!-- Overlay backdrop -->
@@ -68,6 +70,8 @@ import { ThemeService } from './core/services/theme.service';
       </nav>
       
       <!-- Main content area with header -->
+      <app-notification-popup *ngIf="showNotificationPopup && auth.isLoggedIn()" (closed)="onNotificationClosed()"></app-notification-popup>
+
       <main class="main-wrapper">
         <!-- Top Header -->
         <header class="page-header">
@@ -496,9 +500,21 @@ export class AppComponent implements OnInit, OnDestroy {
   private dateInterval: any;
 
   constructor(
-    public auth: AuthService, 
-    public themeService: ThemeService
-  ) {}
+    public auth: AuthService,
+    public themeService: ThemeService,
+    private router: Router
+  ) {
+    // Show the active-notification popup once per login session (fires right after login)
+    this.router.events.pipe(filter((e) => e instanceof NavigationEnd)).subscribe(() => {
+      this.showNotificationPopup = this.auth.isLoggedIn() && sessionStorage.getItem('notificationShown') !== '1';
+    });
+  }
+
+  showNotificationPopup = false;
+
+  onNotificationClosed(): void {
+    this.showNotificationPopup = false;
+  }
 
   ngOnInit(): void {
     this.themeService.currentTheme$.subscribe();

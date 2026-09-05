@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using AICultureHub.Application.DTOs;
 using AICultureHub.Application.Interfaces;
 using AICultureHub.Infrastructure.Data;
@@ -107,6 +108,25 @@ public class AuthController : ControllerBase
         await dbContext.SaveChangesAsync();
 
         return Ok(new { avatarUrl = user.AvatarUrl, message = "تصویر پروفایل ذخیره شد" });
+    }
+
+    /// <summary>
+    /// The currently active notification (single-active rule) shown as a popup after login.
+    /// Returns 204 when no active notification exists.
+    /// </summary>
+    [Authorize]
+    [HttpGet("active-notification")]
+    public async Task<IActionResult> GetActiveNotification([FromServices] ApplicationDbContext dbContext)
+    {
+        var now = DateTime.UtcNow;
+        var notification = await dbContext.Announcements
+            .Where(a => a.IsActive && a.IsPublished && a.StartDate <= now && (!a.EndDate.HasValue || a.EndDate >= now))
+            .OrderByDescending(a => a.CreatedDate)
+            .Select(a => new { a.Id, a.Title, a.Content, a.Summary, a.Priority, a.ImageUrl, a.CreatedDate })
+            .FirstOrDefaultAsync();
+
+        if (notification == null) return NoContent();
+        return Ok(notification);
     }
 
     [HttpGet("departments")]

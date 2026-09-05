@@ -186,6 +186,12 @@ public class AdminService : IAdminService
 
     public async Task<AnnouncementDto> CreateAnnouncementAsync(AnnouncementDto model, int createdBy)
     {
+        // Single-active-notification rule: publishing a new one deactivates all others
+        if (model.IsPublished)
+        {
+            var others = await _context.Announcements.Where(a => a.IsActive && a.IsPublished).ToListAsync();
+            foreach (var o in others) o.IsPublished = false;
+        }
         var announcement = new Announcement { Title = model.Title, Content = model.Content, Summary = model.Summary, Priority = model.Priority, ImageUrl = model.ImageUrl, StartDate = model.StartDate, EndDate = model.EndDate, IsPublished = model.IsPublished, CreatedBy = createdBy, IsActive = true, CreatedDate = DateTime.UtcNow };
         _context.Announcements.Add(announcement);
         await _context.SaveChangesAsync();
@@ -197,6 +203,12 @@ public class AdminService : IAdminService
     {
         var announcement = await _context.Announcements.FindAsync(id);
         if (announcement == null) return null;
+        // Single-active-notification rule: publishing this one deactivates all others
+        if (model.IsPublished)
+        {
+            var others = await _context.Announcements.Where(a => a.IsActive && a.IsPublished && a.Id != id).ToListAsync();
+            foreach (var o in others) o.IsPublished = false;
+        }
         announcement.Title = model.Title; announcement.Content = model.Content; announcement.Summary = model.Summary; announcement.Priority = model.Priority; announcement.ImageUrl = model.ImageUrl; announcement.StartDate = model.StartDate; announcement.EndDate = model.EndDate; announcement.IsPublished = model.IsPublished; announcement.ModifiedDate = DateTime.UtcNow; announcement.ModifiedBy = modifiedBy;
         await _context.SaveChangesAsync();
         return new AnnouncementDto { Id = announcement.Id, Title = announcement.Title, Content = announcement.Content, Summary = announcement.Summary, Priority = announcement.Priority, ImageUrl = announcement.ImageUrl, StartDate = announcement.StartDate, EndDate = announcement.EndDate, IsPublished = announcement.IsPublished, CreatedDate = announcement.CreatedDate };

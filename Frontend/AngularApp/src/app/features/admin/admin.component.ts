@@ -598,30 +598,41 @@ export class CompactJoinPipe implements PipeTransform {
       <!-- Announcements Section -->
       <div class="crud-section" *ngIf="activeTab === 'announcements'">
         <div class="crud-header">
-          <h3>مدیریت اطلاعیه‌ها</h3>
+          <h3>📣 مدیریت اطلاعیه فعال</h3>
           <button class="btn-primary" (click)="openAnnouncementModal()">+ اطلاعیه جدید</button>
         </div>
+        <p class="policy-hint">فقط <strong>یک اطلاعیه فعال</strong> در هر لحظه وجود دارد. انتشار اطلاعیه جدید، اطلاعیه فعال قبلی را غیرفعال می‌کند. اطلاعیه فعال پس از ورود هر کاربر به‌صورت پنجره نمایش داده می‌شود.</p>
         <table class="crud-table">
           <thead>
             <tr>
               <th>عنوان</th>
-              <th>محتوا</th>
+              <th>متن</th>
               <th>اولویت</th>
+              <th>وضعیت</th>
               <th>تاریخ</th>
               <th>عملیات</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let ann of announcements">
-              <td>{{ ann.title }}</td>
+              <td>
+                <span class="active-dot" *ngIf="ann.isPublished" title="اطلاعیه فعال"></span>
+                {{ ann.title }}
+              </td>
               <td>{{ ann.content | slice:0:50 }}...</td>
               <td>
                 <span class="priority-badge" [attr.data-priority]="ann.priority">
                   {{ ann.priority }}
                 </span>
               </td>
+              <td>
+                <span class="status-badge" [class.published]="ann.isPublished">
+                  {{ ann.isPublished ? 'فعال' : 'آرشیو' }}
+                </span>
+              </td>
               <td>{{ formatDate(ann.createdDate) }}</td>
               <td class="actions">
+                <button class="btn-edit" (click)="editAnnouncement(ann)">ویرایش</button>
                 <button class="btn-delete" (click)="deleteAnnouncement(ann.id)">حذف</button>
               </td>
             </tr>
@@ -865,13 +876,17 @@ export class CompactJoinPipe implements PipeTransform {
     <div class="modal" *ngIf="showAnnouncementModal">
       <div class="modal-content">
         <div class="modal-header">
-          <h3>اطلاعیه جدید</h3>
+          <h3>{{ editingAnnouncement ? 'ویرایش اطلاعیه' : 'اطلاعیه جدید' }}</h3>
           <button class="btn-close" (click)="closeAnnouncementModal()">×</button>
         </div>
         <form (ngSubmit)="saveAnnouncement()">
           <div class="form-group">
-            <label>عنوان</label>
+            <label>عنوان <span class="required">*</span></label>
             <input type="text" [(ngModel)]="announcementForm.title" name="title" required>
+          </div>
+          <div class="form-group">
+            <label>خلاصه (اختیاری — زیر عنوان نمایش داده می‌شود)</label>
+            <input type="text" [(ngModel)]="announcementForm.summary" name="summary">
           </div>
           <div class="form-group">
             <label>محتوا</label>
@@ -883,11 +898,14 @@ export class CompactJoinPipe implements PipeTransform {
               <select [(ngModel)]="announcementForm.priority" name="priority">
                 <option value="Normal">معمولی</option>
                 <option value="High">فوری</option>
+                <option value="Critical">بحرانی</option>
               </select>
             </div>
             <div class="form-group">
-              <label>مهم</label>
-              <input type="checkbox" [(ngModel)]="announcementForm.isPinned" name="isPinned">
+              <label class="checkbox-label">
+                <input type="checkbox" [(ngModel)]="announcementForm.isPublished" name="isPublished">
+                فعال (نمایش به کاربران پس از ورود)
+              </label>
             </div>
           </div>
           <div class="form-actions">
@@ -1544,6 +1562,21 @@ export class CompactJoinPipe implements PipeTransform {
     .policy-input:focus { outline: none; border-color: var(--theme-primary); }
     .policy-title-input { font-weight: 700; min-width: 140px; }
 
+    .active-dot {
+      display: inline-block;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--theme-success);
+      margin-left: 7px;
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-success) 22%, transparent);
+      animation: activePulse 2s ease-in-out infinite;
+    }
+    @keyframes activePulse {
+      0%, 100% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-success) 22%, transparent); }
+      50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--theme-success) 10%, transparent); }
+    }
+
     .user-search-input {
       padding: 10px 14px;
       border: 1.5px solid var(--theme-border);
@@ -1816,7 +1849,8 @@ export class AdminComponent implements OnInit {
 
   articleForm: any = { title: '', summary: '', content: '', categoryId: '', difficulty: 'Beginner', readingTimeMinutes: 5, isPublished: false, imageUrl: '', videoUrl: '' };
   courseForm: any = { title: '', shortDescription: '', description: '', difficulty: 'Beginner', estimatedDurationMinutes: 60, points: 100, isPublished: false, thumbnailUrl: '' };
-  announcementForm: any = { title: '', content: '', priority: 'Normal', isPinned: false };
+  announcementForm: any = { title: '', summary: '', content: '', priority: 'Normal', isPublished: true };
+  editingAnnouncement: any = null;
   categoryForm: any = { name: '', description: '', displayOrder: 0 };
   roleForm: any = { name: '', description: '' };
   uploading = false;
@@ -2680,20 +2714,41 @@ export class AdminComponent implements OnInit {
   }
 
   openAnnouncementModal(): void {
-    this.announcementForm = { title: '', content: '', priority: 'Normal', isPinned: false };
+    this.editingAnnouncement = null;
+    this.announcementForm = { title: '', summary: '', content: '', priority: 'Normal', isPublished: true };
+    this.showAnnouncementModal = true;
+  }
+
+  editAnnouncement(ann: any): void {
+    this.editingAnnouncement = ann;
+    this.announcementForm = { title: ann.title, summary: ann.summary || '', content: ann.content, priority: ann.priority || 'Normal', isPublished: ann.isPublished };
     this.showAnnouncementModal = true;
   }
 
   closeAnnouncementModal(): void {
     this.showAnnouncementModal = false;
+    this.editingAnnouncement = null;
   }
 
   saveAnnouncement(): void {
-    this.http.post<any>(`${this.apiUrl}/admin/announcements`, this.announcementForm).subscribe({
-      next: () => { this.closeAnnouncementModal(); this.loadAnnouncements(); },
+    if (!this.announcementForm.title || !this.announcementForm.title.trim()) {
+      alert('عنوان اطلاعیه الزامی است');
+      return;
+    }
+    const payload = { ...this.announcementForm, startDate: new Date().toISOString() };
+    const req = this.editingAnnouncement
+      ? this.http.put<any>(`${this.apiUrl}/admin/announcements/${this.editingAnnouncement.id}`, payload)
+      : this.http.post<any>(`${this.apiUrl}/admin/announcements`, payload);
+
+    req.subscribe({
+      next: () => {
+        alert(this.editingAnnouncement ? 'اطلاعیه بروزرسانی شد' : 'اطلاعیه فعال ذخیره شد — پس از ورود بعدی برای همه کاربران نمایش داده می‌شود');
+        this.closeAnnouncementModal();
+        this.loadAnnouncements();
+      },
       error: (err) => {
-        console.error('Create announcement error:', err);
-        alert('خطا در ایجاد اطلاعیه: ' + (err.error?.message || err.message || 'خطای سرور'));
+        console.error('Save announcement error:', err);
+        alert('خطا در ذخیره اطلاعیه: ' + (err.error?.message || err.message || 'خطای سرور'));
       }
     });
   }
