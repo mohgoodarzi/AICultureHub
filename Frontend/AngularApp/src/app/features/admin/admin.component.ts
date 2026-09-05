@@ -933,6 +933,22 @@ export class CompactJoinPipe implements PipeTransform {
             <input type="text" [(ngModel)]="userForm.lastName" name="lastName">
           </div>
           <div class="form-group">
+            <label>تصویر پروفایل</label>
+            <div class="avatar-upload">
+              <div class="avatar-preview">
+                <img *ngIf="userForm.avatarUrl" [src]="userForm.avatarUrl" alt="پیش‌نمایش">
+                <span class="avatar-fallback" *ngIf="!userForm.avatarUrl">{{ userForm.firstName?.charAt(0) || '؟' }}{{ userForm.lastName?.charAt(0) || '' }}</span>
+              </div>
+              <div class="avatar-actions">
+                <input type="file" accept="image/*" (change)="onAvatarSelected($event)" #avatarInput hidden>
+                <button type="button" class="btn-edit" (click)="avatarInput.click()">انتخاب تصویر</button>
+                <button type="button" class="btn-delete" (click)="removeUserAvatar()" *ngIf="userForm.avatarUrl">حذف تصویر</button>
+                <small style="color:var(--theme-text-muted)">JPG/PNG/WebP — حداکثر {{ uploadLimits.maxImageSizeMB }} مگابایت</small>
+              </div>
+            </div>
+            <div class="upload-progress" *ngIf="uploadingAvatar">در حال آپلود تصویر...</div>
+          </div>
+          <div class="form-group">
             <label>{{ editingUser ? 'رمز عبور جدید (خالی بگذارید تا تغییر نکند)' : 'رمز عبور' }} <span class="required" *ngIf="!editingUser">*</span></label>
             <input type="password" [(ngModel)]="userForm.password" name="password">
           </div>
@@ -1715,6 +1731,8 @@ export class AdminComponent implements OnInit {
 
   uploadLimits: any = { maxImageSizeMB: 10, maxVideoSizeMB: 50 };
   uploadSettingsSaving = false;
+  uploadingAvatar = false;
+  pendingAvatarFile: File | null = null;
 
   constructor(private http: HttpClient) {}
 
@@ -2377,11 +2395,84 @@ export class AdminComponent implements OnInit {
       departmentId: user.departmentId || null,
       positionId: user.positionId || null,
       employeeId: user.employeeId || '',
-      isActive: user.isActive !== false
+      isActive: user.isActive !== false,
+      avatarUrl: user.avatarUrl || ''
     };
     this.loadDepartments();
     this.loadPositions();
     this.showUserModal = true;
+  }
+
+  onAvatarSelected(event: any): void {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Type + size validation (limits are admin-configurable)
+    const allowed = ['.jpg', '.jpeg', '.png', '.webp'];
+    const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    if (!allowed.includes(ext)) {
+      alert('فقط تصاویر JPG، PNG یا WebP مجاز هستند');
+      event.target.value = '';
+      return;
+    }
+    const maxMB = this.uploadLimits.maxImageSizeMB;
+    if (file.size > maxMB * 1024 * 1024) {
+      alert(`حجم تصویر نباید بیشتر از ${maxMB} مگابایت باشد`);
+      event.target.value = '';
+      return;
+    }
+
+    // For existing users: upload immediately. For new users: keep locally and upload after creation.
+    if (this.editingUser) {
+      const formData = new FormData();
+      formData.append('file', file);
+      this.uploadingAvatar = true;
+      this.http.post<any>(`${this.apiUrl}/admin/users/${this.editingUser.id}/avatar`, formData).subscribe({
+        next: (resp) => {
+          this.userForm.avatarUrl = resp.avatarUrl + '?t=' + Date.now();
+          this.uploadingAvatar = false;
+          this.loadUsers();
+        },
+        error: (err) => {
+          this.uploadingAvatar = false;
+          alert('خطا در آپلود تصویر: ' + (err.error?.message || err.message));
+        }
+      });
+    } else {
+      // Read as data URL for preview; actual upload happens after user creation
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.userForm.avatarUrl = reader.result as string;
+        this.pendingAvatarFile = file;
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  removeUserAvatar(): void {
+    if (!this.editingUser) {
+      this.userForm.avatarUrl = '';
+      this.pendingAvatarFile = null;
+      return;
+    }
+    if (!confirm('تصویر پروفایل حذف شود؟')) return;
+    this.http.delete(`${this.apiUrl}/admin/users/${this.editingUser.id}/avatar`).subscribe({
+      next: () => {
+        this.userForm.avatarUrl = '';
+        this.loadUsers();
+      },
+      error: (err) => alert('خطا در حذف تصویر: ' + (err.error?.message || err.message))
+    });
+  }
+
+  private uploadAvatarFor(userId: number): void {
+    if (!this.pendingAvatarFile) return;
+    const formData = new FormData();
+    formData.append('file', this.pendingAvatarFile);
+    this.http.post<any>(`${this.apiUrl}/admin/users/${userId}/avatar`, formData).subscribe({
+      next: () => { this.pendingAvatarFile = null; this.loadUsers(); },
+      error: (err) => alert('خطا در آپلود تصویر پروفایل: ' + (err.error?.message || err.message))
+    });
   }
 
   saveUser(): void {
@@ -2421,7 +2512,13 @@ export class AdminComponent implements OnInit {
         return;
       }
       this.http.post<any>(`${this.apiUrl}/admin/users`, this.userForm).subscribe({
-        next: () => { this.closeUserModal(); this.loadUsers(); },
+        next: (created) => {
+          if (this.pendingAvatarFile && created?.id) {
+            this.uploadAvatarFor(created.id);
+          }
+          this.closeUserModal();
+          this.loadUsers();
+        },
         error: (err) => alert('خطا در ایجاد کاربر: ' + (err.error?.message || err.message))
       });
     }

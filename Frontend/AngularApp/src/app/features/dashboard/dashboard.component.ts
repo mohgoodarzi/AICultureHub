@@ -21,11 +21,21 @@ import { ShamsiDate } from '../../core/utils/shamsi-date';
           <div class="hero-chip">✦ سامانه هوش مصنوعی و تحول دیجیتال</div>
           <span class="hero-date">{{ currentDate }}</span>
         </div>
-        <h1>
-          سلام {{ auth.user()?.firstName }} 👋
-          <span class="hero-underline"></span>
-        </h1>
-        <p>امروز مسیر یادگیری هوش مصنوعی‌ات را ادامه بده؛ هر قدم کوچک، تو را به متخصص تحول دیجیتال نزدیک‌تر می‌کند.</p>
+<div class="hero-welcome">
+          <div class="hero-avatar">
+            <img *ngIf="auth.user()?.avatarUrl && !avatarError; else defaultAvatar" [src]="auth.user()?.avatarUrl" alt="تصویر پروفایل" (error)="avatarError = true">
+            <ng-template #defaultAvatar>
+              <div class="hero-avatar-default">{{ (auth.user()?.firstName || '؟')?.charAt(0) }}</div>
+            </ng-template>
+          </div>
+          <div class="hero-text">
+            <h1>
+              سلام {{ auth.user()?.firstName }} 👋
+              <span class="hero-underline"></span>
+            </h1>
+            <p>امروز مسیر یادگیری هوش مصنوعی‌ات را ادامه بده؛ هر قدم کوچک، تو را به متخصص تحول دیجیتال نزدیک‌تر می‌کند.</p>
+          </div>
+        </div>
         <div class="hero-actions">
           <a routerLink="/articles" class="hero-btn solid">📖 مشاهده مقالات</a>
           <a routerLink="/quizzes" class="hero-btn glass">🧪 شروع آزمون</a>
@@ -195,6 +205,43 @@ import { ShamsiDate } from '../../core/utils/shamsi-date';
 
     .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; position: relative; }
 
+    /* Profile photo in hero */
+    .hero-welcome { display: flex; align-items: center; gap: 24px; position: relative; }
+    .hero-avatar {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      overflow: hidden;
+      flex-shrink: 0;
+      border: 3px solid rgba(255,255,255,0.65);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+      background: rgba(255,255,255,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .hero-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .hero-avatar-default {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: #fff;
+      background: rgba(255,255,255,0.18);
+    }
+    @media (max-width: 640px) {
+      .hero-avatar { width: 72px; height: 72px; }
+      .hero-avatar-default { font-size: 1.6rem; }
+    }
+
     .hero-btn {
       padding: 11px 22px;
       border-radius: 12px;
@@ -362,6 +409,7 @@ export class DashboardComponent implements OnInit {
   recentBadges: any[] = [];
   recommendedCourses: any[] = [];
   levelProgress = 0;
+  avatarError = false;
 
   constructor(
     public auth: AuthService,
@@ -372,6 +420,9 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.currentDate = ShamsiDate.format(new Date(), 'full');
+    this.onAvatarError = this.onAvatarError.bind(this);
+    // Refresh user data (profile photo, name, level) so admin changes reflect immediately
+    this.auth.refreshUser();
     const user = this.auth.user();
     if (user?.currentLevel && user?.currentLevelPoints) {
       const required = user.currentLevel.pointsRequired || 100;
@@ -379,6 +430,10 @@ export class DashboardComponent implements OnInit {
     }
     this.recentBadges = user?.badges?.slice(0, 4) || [];
     this.loadDashboard();
+  }
+
+  onAvatarError(): void {
+    this.avatarError = true;
   }
 
   loadDashboard(): void {

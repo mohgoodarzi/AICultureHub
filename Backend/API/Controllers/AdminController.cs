@@ -5,6 +5,7 @@ using AICultureHub.Application.Common.Models;
 using AICultureHub.Application.DTOs;
 using AICultureHub.Application.Interfaces;
 using AICultureHub.API.Attributes;
+using AICultureHub.Infrastructure.Data;
 
 namespace AICultureHub.API.Controllers;
 
@@ -152,6 +153,69 @@ public class AdminController : ControllerBase
         var announcement = await _adminService.UpdateAnnouncementAsync(id, model, userId);
         if (announcement == null) return NotFound();
         return Ok(announcement);
+    }
+
+    [HttpPost("users/{id}/avatar")]
+    public async Task<IActionResult> UploadUserAvatar(int id, IFormFile file, [FromServices] IWebHostEnvironment env, [FromServices] ApplicationDbContext dbContext)
+    {
+        var user = await dbContext.Users.FindAsync(id);
+        if (user == null) return NotFound(new { message = "کاربر یافت نشد" });
+
+        if (file == null || file.Length == 0)
+            return BadRequest(new { message = "فایلی انتخاب نشده است" });
+
+        // Type validation: images only
+        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+        var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+        if (!allowedExtensions.Contains(ext))
+            return BadRequest(new { message = "فقط تصاویر JPG، PNG یا WEBP مجاز هستند" });
+
+        // Size validation: reuse the admin-configured image limit
+        var (maxImageMB, _) = UploadController.GetLimits(dbContext);
+        var maxBytes = maxImageMB * 1024L * 1024L;
+        if (file.Length > maxBytes)
+            return BadRequest(new { message = $"حجم تصویر نباید بیشتر از {maxImageMB} مگابایت باشد" });
+
+        var avatarsFolder = Path.Combine(env.ContentRootPath, "wwwroot", "uploads", "avatars");
+        Directory.CreateDirectory(avatarsFolder);
+
+        // Remove the old avatar file to avoid orphans
+        if (!string.IsNullOrEmpty(user.AvatarUrl) && user.AvatarUrl.StartsWith("/uploads/avatars/"))
+        {
+            var oldPath = Path.Combine(env.ContentRootPath, "wwwroot", user.AvatarUrl.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+            if (System.IO.File.Exists(oldPath)) System.IO.File.Delete(oldPath);
+        }
+
+        var fileName = $"{id}-{Guid.NewGuid()}{ext}";
+        var filePath = Path.Combine(avatarsFolder, fileName);
+        using (var stream = new FileStream(filePath, FileMode.Create))
+        {
+            await file.CopyToAsync(stream);
+        }
+
+        user.AvatarUrl = $"/uploads/avatars/{fileName}";
+        user.ModifiedDate = DateTime.UtcNow;
+        await dbContext.SaveChangesAsync();
+
+        return Ok(new { avatarUrl = user.AvatarUrl, message = "تصویر پروفایل ذخیره شد" });
+    }
+
+    [HttpDelete("users/{id}/avatar")]
+    public async Task<IActionResult> DeleteUserAvatar(int id, [FromServices] IWebHostEnvironment env, [FromServices] ApplicationDbContext dbContext)
+    {
+        var user = await dbContext.Users.FindAsync(id);
+        if (user == null) return NotFound(new { message = "کاربر یافت نشد" });
+
+        if (!string.IsNullOrEmpty(user.AvatarUrl) && user.AvatarUrl.StartsWith("/uploads/avatars/"))
+        {
+            var oldPath = Path.Combine(env.ContentRootPath, "wwwroot", user.AvatarUrl.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+            if (System.IO.File.Exists(oldPath)) System.IO.File.Delete(oldPath);
+        }
+
+        user.AvatarUrl = null;
+        user.ModifiedDate = DateTime.UtcNow;
+        await dbContext.SaveChangesAsync();
+        return Ok(new { message = "تصویر پروفایل حذف شد" });
     }
 
     [HttpDelete("announcements/{id}")]
