@@ -11,6 +11,7 @@ public class Article : BaseEntity
     public int CategoryId { get; set; }
     public int AuthorId { get; set; }
     public string? ImageUrl { get; set; }
+    public string? VideoUrl { get; set; }
     public int ReadingTimeMinutes { get; set; } = 5;
     public int ViewCount { get; set; } = 0;
     public int LikeCount { get; set; } = 0;

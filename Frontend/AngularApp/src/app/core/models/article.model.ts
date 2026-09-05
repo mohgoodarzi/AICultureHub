@@ -8,6 +8,7 @@ export interface ArticleDto {
   author?: UserBasicDto;
   authorName?: string;
   imageUrl?: string;
+  videoUrl?: string;
   readingTimeMinutes: number;
   viewCount: number;
   likeCount: number;
@@ -29,6 +30,7 @@ export interface ArticleListDto {
   slug: string;
   summary?: string;
   imageUrl?: string;
+  videoUrl?: string;
   readingTimeMinutes: number;
   categoryName: string;
   authorName?: string;
@@ -66,6 +68,7 @@ export interface CreateArticleRequest {
   content: string;
   categoryId: number;
   imageUrl?: string;
+  videoUrl?: string;
   difficulty?: string;
   isPublished: boolean;
   tagIds: number[];
@@ -77,6 +80,7 @@ export interface UpdateArticleRequest {
   content?: string;
   categoryId?: number;
   imageUrl?: string;
+  videoUrl?: string;
   difficulty?: string;
   isPublished?: boolean;
   isFeatured?: boolean;

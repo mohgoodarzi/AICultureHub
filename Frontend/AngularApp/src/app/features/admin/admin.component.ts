@@ -46,6 +46,7 @@ export class CompactJoinPipe implements PipeTransform {
         <button [class.active]="activeTab === 'roles'" (click)="activeTab = 'roles'; loadRoles()"><span class="tab-ico">🔑</span>نقش‌ها</button>
         <button [class.active]="activeTab === 'announcements'" (click)="activeTab = 'announcements'"><span class="tab-ico">📣</span>اطلاعیه‌ها</button>
         <button [class.active]="activeTab === 'aipolicy'" (click)="activeTab = 'aipolicy'; loadAiPolicy()"><span class="tab-ico">📜</span>خط‌مشی AI</button>
+        <button [class.active]="activeTab === 'settings'" (click)="activeTab = 'settings'; loadUploadLimits()"><span class="tab-ico">⚙️</span>تنظیمات</button>
       </div>
 
       <!-- Analytics Section -->
@@ -408,6 +409,32 @@ export class CompactJoinPipe implements PipeTransform {
         </table>
       </div>
 
+      <!-- Upload Settings Section -->
+      <div class="crud-section" *ngIf="activeTab === 'settings'">
+        <div class="crud-header">
+          <h3>⚙️ تنظیمات سامانه</h3>
+        </div>
+        <div class="org-grid">
+          <div class="org-pane" style="max-width: 480px;">
+            <h3 style="margin:0 0 6px 0; font-size:1rem; font-weight:800; color:var(--theme-text);">📁 حداکثر حجم آپلود رسانه</h3>
+            <p class="policy-hint">این مقادیر توسط مدیر قابل تغییر است و بلافاصله برای همه کاربران اعمال می‌شود (بدون نیاز به تغییر کد).</p>
+            <div class="form-group">
+              <label>حداکثر حجم تصویر (مگابایت)</label>
+              <input type="number" min="1" max="200" [(ngModel)]="uploadLimits.maxImageSizeMB" name="maxImageSizeMB">
+            </div>
+            <div class="form-group">
+              <label>حداکثر حجم ویدیو (مگابایت)</label>
+              <input type="number" min="1" max="200" [(ngModel)]="uploadLimits.maxVideoSizeMB" name="maxVideoSizeMB">
+            </div>
+            <div class="modal-actions">
+              <button class="btn-primary" (click)="saveUploadLimits()" [disabled]="uploadSettingsSaving">
+                {{ uploadSettingsSaving ? 'در حال ذخیره...' : 'ذخیره تنظیمات' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- AI Policy Section -->
       <div class="crud-section" *ngIf="activeTab === 'aipolicy'">
         <div class="crud-header">
@@ -533,8 +560,15 @@ export class CompactJoinPipe implements PipeTransform {
             </div>
           </div>
           <div class="form-group">
-            <label>ویدیو (اختیاری)</label>
+            <label>ویدیو (اختیاری) — حداکثر {{ uploadLimits.maxVideoSizeMB }} مگابایت</label>
             <input type="file" (change)="onVideoSelected($event, 'article')" accept="video/*" class="file-input">
+            <div class="image-preview" *ngIf="articleForm.videoUrl">
+              <video [src]="articleForm.videoUrl" controls style="max-width:100%; border-radius:8px;"></video>
+              <button type="button" class="btn-remove" (click)="articleForm.videoUrl = ''">حذف</button>
+            </div>
+            <div class="upload-progress" *ngIf="uploading">
+              <span>در حال آپلود...</span>
+            </div>
           </div>
           <div class="form-actions">
             <button type="button" class="btn-cancel" (click)="closeArticleModal()">انصراف</button>
@@ -1466,7 +1500,7 @@ export class AdminComponent implements OnInit {
   departments: any[] = [];
   positions: any[] = [];
 
-  articleForm: any = { title: '', summary: '', content: '', categoryId: '', difficulty: 'Beginner', readingTimeMinutes: 5, isPublished: false, imageUrl: '' };
+  articleForm: any = { title: '', summary: '', content: '', categoryId: '', difficulty: 'Beginner', readingTimeMinutes: 5, isPublished: false, imageUrl: '', videoUrl: '' };
   courseForm: any = { title: '', shortDescription: '', description: '', difficulty: 'Beginner', estimatedDurationMinutes: 60, points: 100, isPublished: false, thumbnailUrl: '' };
   announcementForm: any = { title: '', content: '', priority: 'Normal', isPinned: false };
   categoryForm: any = { name: '', description: '', displayOrder: 0 };
@@ -1494,6 +1528,9 @@ export class AdminComponent implements OnInit {
   policyItems: any[] = [];
   savingPolicy = false;
 
+  uploadLimits: any = { maxImageSizeMB: 10, maxVideoSizeMB: 50 };
+  uploadSettingsSaving = false;
+
   constructor(private http: HttpClient) {}
 
   ngOnInit(): void {
@@ -1501,6 +1538,33 @@ export class AdminComponent implements OnInit {
     this.loadUsers();
     this.loadAnnouncements();
     this.loadCategories();
+    this.loadUploadLimits();
+  }
+
+  loadUploadLimits(): void {
+    this.http.get<any>(`${this.apiUrl}/upload/limits`).subscribe({
+      next: (data) => this.uploadLimits = data,
+      error: () => this.uploadLimits = { maxImageSizeMB: 10, maxVideoSizeMB: 50 }
+    });
+  }
+
+  saveUploadLimits(): void {
+    if (!this.uploadLimits.maxImageSizeMB || this.uploadLimits.maxImageSizeMB < 1 ||
+        !this.uploadLimits.maxVideoSizeMB || this.uploadLimits.maxVideoSizeMB < 1) {
+      alert('حداکثر حجم باید عددی بزرگ‌تر از صفر باشد');
+      return;
+    }
+    this.uploadSettingsSaving = true;
+    this.http.put(`${this.apiUrl}/upload/limits`, this.uploadLimits).subscribe({
+      next: () => {
+        this.uploadSettingsSaving = false;
+        alert('تنظیمات آپلود با موفقیت ذخیره شد');
+      },
+      error: (err) => {
+        this.uploadSettingsSaving = false;
+        alert('خطا در ذخیره تنظیمات: ' + (err.error?.message || err.message));
+      }
+    });
   }
 
   get apiUrl() { return environment.apiUrl; }
@@ -1711,7 +1775,7 @@ export class AdminComponent implements OnInit {
 
   openArticleModal(): void {
     this.editingArticle = null;
-    this.articleForm = { title: '', summary: '', content: '', categoryId: '', difficulty: 'Beginner', readingTimeMinutes: 5, isPublished: false };
+    this.articleForm = { title: '', summary: '', content: '', categoryId: '', difficulty: 'Beginner', readingTimeMinutes: 5, isPublished: false, imageUrl: '', videoUrl: '' };
     this.showArticleModal = true;
   }
 
@@ -2203,6 +2267,13 @@ export class AdminComponent implements OnInit {
     const file = event.target.files[0];
     if (!file) return;
 
+    const maxMB = this.uploadLimits.maxImageSizeMB;
+    if (file.size > maxMB * 1024 * 1024) {
+      alert(`حجم تصویر نباید بیشتر از ${maxMB} مگابایت باشد`);
+      event.target.value = '';
+      return;
+    }
+
     const formData = new FormData();
     formData.append('file', file);
 
@@ -2216,9 +2287,9 @@ export class AdminComponent implements OnInit {
         }
         this.uploading = false;
       },
-      error: () => {
+      error: (err) => {
         this.uploading = false;
-        alert('خطا در آپلود تصویر');
+        alert(err.error?.message || 'خطا در آپلود تصویر');
       }
     });
   }
@@ -2226,6 +2297,13 @@ export class AdminComponent implements OnInit {
   onVideoSelected(event: any, type: 'article' | 'course'): void {
     const file = event.target.files[0];
     if (!file) return;
+
+    const maxMB = this.uploadLimits.maxVideoSizeMB;
+    if (file.size > maxMB * 1024 * 1024) {
+      alert(`حجم ویدیو نباید بیشتر از ${maxMB} مگابایت باشد`);
+      event.target.value = '';
+      return;
+    }
 
     const formData = new FormData();
     formData.append('file', file);
@@ -2240,9 +2318,9 @@ export class AdminComponent implements OnInit {
         }
         this.uploading = false;
       },
-      error: () => {
+      error: (err) => {
         this.uploading = false;
-        alert('خطا در آپلود ویدیو');
+        alert(err.error?.message || 'خطا در آپلود ویدیو');
       }
     });
   }

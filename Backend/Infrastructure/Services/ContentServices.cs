@@ -56,7 +56,7 @@ public class ArticleService : IArticleService
     public async Task<ArticleDto> CreateArticleAsync(CreateArticleRequest request, int createdBy)
     {
         Console.WriteLine($"[CreateArticleAsync] Starting. Title={request.Title}, CategoryId={request.CategoryId}, CreatedBy={createdBy}");
-        var article = new Article { Title = request.Title, Slug = GenerateSlug(request.Title), Summary = request.Summary, Content = request.Content, CategoryId = request.CategoryId ?? 0, AuthorId = createdBy, ImageUrl = request.ImageUrl, Difficulty = request.Difficulty, IsPublished = request.IsPublished, IsActive = true, PublishedDate = request.IsPublished ? DateTime.UtcNow : null, CreatedDate = DateTime.UtcNow, CreatedBy = createdBy };
+        var article = new Article { Title = request.Title, Slug = GenerateSlug(request.Title), Summary = request.Summary, Content = request.Content, CategoryId = request.CategoryId ?? 0, AuthorId = createdBy, ImageUrl = request.ImageUrl, VideoUrl = request.VideoUrl, Difficulty = request.Difficulty, IsPublished = request.IsPublished, IsActive = true, PublishedDate = request.IsPublished ? DateTime.UtcNow : null, CreatedDate = DateTime.UtcNow, CreatedBy = createdBy };
         Console.WriteLine($"[CreateArticleAsync] Article object created. About to SaveChanges.");
         _context.Articles.Add(article);
         await _context.SaveChangesAsync();
@@ -76,6 +76,7 @@ public class ArticleService : IArticleService
         if (!string.IsNullOrEmpty(request.Content)) article.Content = request.Content;
         if (request.CategoryId.HasValue) article.CategoryId = request.CategoryId.Value;
         if (request.ImageUrl != null) article.ImageUrl = request.ImageUrl;
+        if (request.VideoUrl != null) article.VideoUrl = request.VideoUrl;
         if (!string.IsNullOrEmpty(request.Difficulty)) article.Difficulty = request.Difficulty;
         if (request.ReadingTimeMinutes.HasValue) article.ReadingTimeMinutes = request.ReadingTimeMinutes.Value;
         if (request.IsPublished.HasValue) { article.IsPublished = request.IsPublished.Value; if (request.IsPublished.Value && !article.PublishedDate.HasValue) article.PublishedDate = DateTime.UtcNow; }
@@ -190,7 +191,7 @@ public class ArticleService : IArticleService
 
     private static string GenerateSlug(string title) => title.ToLowerInvariant().Replace(" ", "-").Replace("'", "").Replace("\"", "") + "-" + DateTime.UtcNow.Ticks.ToString()[10..];
 
-    private static ArticleDto MapToArticleDto(Article article, int? userId = null, int? likeCount = null, int? dislikeCount = null) => new ArticleDto { Id = article.Id, Title = article.Title, Slug = article.Slug, Summary = article.Summary, Content = article.Content, Category = new CategoryDto { Id = article.Category.Id, Name = article.Category.Name, Slug = article.Category.Slug, Description = article.Category.Description, Icon = article.Category.Icon, Color = article.Category.Color }, AuthorName = article.Author?.FullName, Author = article.Author != null ? new UserDto { Id = article.Author.Id, Username = article.Author.Username, FullName = article.Author.FullName, AvatarUrl = article.Author.AvatarUrl } : null, ImageUrl = article.ImageUrl, ReadingTimeMinutes = article.ReadingTimeMinutes, ViewCount = article.ViewCount, LikeCount = likeCount ?? 0, DislikeCount = dislikeCount ?? 0, IsPublished = article.IsPublished, IsFeatured = article.IsFeatured, PublishedDate = article.PublishedDate, Difficulty = article.Difficulty, CreatedDate = article.CreatedDate, Tags = article.ArticleTags?.Select(at => new TagDto { Id = at.Tag.Id, Name = at.Tag.Name, Slug = at.Tag.Slug }).ToList() ?? new List<TagDto>(), UserVote = userId.HasValue ? null : null };
+    private static ArticleDto MapToArticleDto(Article article, int? userId = null, int? likeCount = null, int? dislikeCount = null) => new ArticleDto { Id = article.Id, Title = article.Title, Slug = article.Slug, Summary = article.Summary, Content = article.Content, Category = new CategoryDto { Id = article.Category.Id, Name = article.Category.Name, Slug = article.Category.Slug, Description = article.Category.Description, Icon = article.Category.Icon, Color = article.Category.Color }, AuthorName = article.Author?.FullName, Author = article.Author != null ? new UserDto { Id = article.Author.Id, Username = article.Author.Username, FullName = article.Author.FullName, AvatarUrl = article.Author.AvatarUrl } : null, ImageUrl = article.ImageUrl, VideoUrl = article.VideoUrl, ReadingTimeMinutes = article.ReadingTimeMinutes, ViewCount = article.ViewCount, LikeCount = likeCount ?? 0, DislikeCount = dislikeCount ?? 0, IsPublished = article.IsPublished, IsFeatured = article.IsFeatured, PublishedDate = article.PublishedDate, Difficulty = article.Difficulty, CreatedDate = article.CreatedDate, Tags = article.ArticleTags?.Select(at => new TagDto { Id = at.Tag.Id, Name = at.Tag.Name, Slug = at.Tag.Slug }).ToList() ?? new List<TagDto>(), UserVote = userId.HasValue ? null : null };
 }
 
 public class CategoryService : ICategoryService

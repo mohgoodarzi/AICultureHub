@@ -130,6 +130,16 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Allow large media uploads (actual per-type limits are enforced by UploadController from admin settings)
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 210 * 1024 * 1024; // slightly above the absolute upload cap
+});
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 200 * 1024 * 1024;
+});
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())

@@ -11,6 +11,7 @@ public class ArticleDto
     public UserDto? Author { get; set; }
     public string? AuthorName { get; set; }
     public string? ImageUrl { get; set; }
+    public string? VideoUrl { get; set; }
     public int ReadingTimeMinutes { get; set; }
     public int ViewCount { get; set; }
     public int LikeCount { get; set; }
@@ -53,6 +54,7 @@ public class CreateArticleRequest
     public string Content { get; set; } = string.Empty;
     public int? CategoryId { get; set; }
     public string? ImageUrl { get; set; }
+    public string? VideoUrl { get; set; }
     public string? Difficulty { get; set; }
     public bool IsPublished { get; set; }
     public int ReadingTimeMinutes { get; set; } = 5;
@@ -66,6 +68,7 @@ public class UpdateArticleRequest
     public string? Content { get; set; }
     public int? CategoryId { get; set; }
     public string? ImageUrl { get; set; }
+    public string? VideoUrl { get; set; }
     public string? Difficulty { get; set; }
     public int? ReadingTimeMinutes { get; set; }
     public bool? IsPublished { get; set; }

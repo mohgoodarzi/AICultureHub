@@ -31,6 +31,10 @@ import { AuthService } from '../../core/services/auth.service';
         <article class="article-body-card animate-fade-up delay-1">
           <div class="article-body" [innerHTML]="article.content"></div>
 
+          <div class="article-video" *ngIf="article.videoUrl">
+            <video [src]="article.videoUrl" controls preload="metadata" style="width:100%; border-radius:12px; margin-top:24px;"></video>
+          </div>
+
           <div class="article-tags" *ngIf="article.tags?.length">
             <span class="tag" *ngFor="let tag of article.tags">#{{ tag.name }}</span>
           </div>
