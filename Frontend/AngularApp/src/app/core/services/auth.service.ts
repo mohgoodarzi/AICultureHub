@@ -46,6 +46,9 @@ export class AuthService {
           localStorage.setItem('token', response.token);
           localStorage.setItem('tokenExpiry', response.expiresAt);
           localStorage.setItem('user', JSON.stringify(response.user));
+          // New login session: clear the per-session notification guard so the
+          // currently active notification can be shown for this login.
+          sessionStorage.removeItem('notificationShown');
           this.userSubject.next(response.user);
           this.loadPermissions(response.user.id);
           observer.next(response);
@@ -66,6 +69,7 @@ export class AuthService {
     localStorage.removeItem('token');
     localStorage.removeItem('tokenExpiry');
     localStorage.removeItem('user');
+    sessionStorage.removeItem('notificationShown');
     this.userSubject.next(null);
     this.permissionsSubject.next(null);
     this.router.navigate(['/login']);
