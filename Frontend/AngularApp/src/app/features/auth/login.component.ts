@@ -107,23 +107,25 @@ interface DataPacket {
     .page-credit {
       position: fixed;
       bottom: 16px;
-      left: 20px;
+      left: 50%;
+      transform: translateX(-50%);
       z-index: 5;
       font-size: 0.72rem;
       font-weight: 600;
       color: var(--theme-text-muted);
       background: color-mix(in srgb, var(--theme-surface) 82%, transparent);
       backdrop-filter: blur(6px);
-      padding: 7px 14px;
+      padding: 7px 18px;
       border-radius: 20px;
       border: 1px solid color-mix(in srgb, var(--theme-border) 75%, transparent);
       box-shadow: 0 2px 10px rgba(0,0,0,0.06);
       letter-spacing: 0.01em;
       direction: rtl;
       white-space: nowrap;
+      text-align: center;
     }
     @media (max-width: 720px) {
-      .page-credit { font-size: 0.62rem; left: 12px; bottom: 10px; padding: 5px 10px; max-width: calc(100vw - 24px); white-space: normal; text-align: right; }
+      .page-credit { font-size: 0.62rem; bottom: 10px; padding: 5px 12px; max-width: calc(100vw - 24px); white-space: normal; }
     }
 
     /* Animated orbs */
