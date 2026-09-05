@@ -83,6 +83,9 @@ interface DataPacket {
           </div>
         </div>
       </div>
+
+      <!-- Footer credit: bottom-left corner -->
+      <div class="page-credit">توسعه و پشتیبانی توسط واحد فناوری اطلاعات ، ارتباطات و حکمرانی داده</div>
     </div>
   `,
   styles: [`
@@ -98,6 +101,29 @@ interface DataPacket {
         radial-gradient(1000px 600px at 85% 10%, color-mix(in srgb, var(--theme-primary) 16%, transparent), transparent 60%),
         radial-gradient(900px 500px at 10% 90%, color-mix(in srgb, var(--theme-secondary) 14%, transparent), transparent 55%),
         var(--theme-background);
+    }
+
+    /* Footer credit - bottom-left corner */
+    .page-credit {
+      position: fixed;
+      bottom: 16px;
+      left: 20px;
+      z-index: 5;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--theme-text-muted);
+      background: color-mix(in srgb, var(--theme-surface) 82%, transparent);
+      backdrop-filter: blur(6px);
+      padding: 7px 14px;
+      border-radius: 20px;
+      border: 1px solid color-mix(in srgb, var(--theme-border) 75%, transparent);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+      letter-spacing: 0.01em;
+      direction: rtl;
+      white-space: nowrap;
+    }
+    @media (max-width: 720px) {
+      .page-credit { font-size: 0.62rem; left: 12px; bottom: 10px; padding: 5px 10px; max-width: calc(100vw - 24px); white-space: normal; text-align: right; }
     }
 
     /* Animated orbs */
