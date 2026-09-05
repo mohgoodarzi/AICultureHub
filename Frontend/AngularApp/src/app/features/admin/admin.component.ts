@@ -482,7 +482,7 @@ export class CompactJoinPipe implements PipeTransform {
                 <button class="btn-toggle" [class.deactivated]="user.isActive" (click)="toggleUserActive(user)">
                   {{ user.isActive ? 'غیرفعال کردن' : 'فعال کردن' }}
                 </button>
-                <button class="btn-delete" (click)="deleteUser(user)">حذف</button>
+                <button class="btn-delete" (click)="deleteUser(user)" *ngIf="!isAdministratorUser(user)">حذف</button>
               </td>
             </tr>
             <tr *ngIf="users.length === 0">
@@ -570,7 +570,7 @@ export class CompactJoinPipe implements PipeTransform {
             <button class="btn-close" (click)="closeOrgModal()">✕</button>
           </div>
           <div class="form-group">
-            <label>نام</label>
+            <label>نام <span class="required">*</span></label>
             <input type="text" [(ngModel)]="orgForm.name" name="orgName" placeholder="نام...">
           </div>
           <div class="form-group" *ngIf="editingOrgKind === 'unit'">
@@ -578,7 +578,7 @@ export class CompactJoinPipe implements PipeTransform {
             <input type="text" [(ngModel)]="orgForm.code" name="orgCode" placeholder="کد واحد (اختیاری)">
           </div>
           <div class="form-group" *ngIf="editingOrgKind === 'position'">
-            <label>واحد سازمانی</label>
+            <label>واحد سازمانی <span class="required">*</span></label>
             <select [(ngModel)]="orgForm.departmentId" name="orgDeptId">
               <option [ngValue]="null">بدون واحد</option>
               <option *ngFor="let unit of departments" [ngValue]="unit.id">{{ unit.name }}</option>
@@ -1017,11 +1017,11 @@ export class CompactJoinPipe implements PipeTransform {
             <input type="email" [(ngModel)]="userForm.email" name="email" required>
           </div>
           <div class="form-group">
-            <label>نام</label>
+            <label>نام <span class="required">*</span></label>
             <input type="text" [(ngModel)]="userForm.firstName" name="firstName">
           </div>
           <div class="form-group">
-            <label>نام خانوادگی</label>
+            <label>نام خانوادگی <span class="required">*</span></label>
             <input type="text" [(ngModel)]="userForm.lastName" name="lastName">
           </div>
           <div class="form-group">
@@ -1049,21 +1049,21 @@ export class CompactJoinPipe implements PipeTransform {
             <input type="password" [(ngModel)]="userForm.confirmPassword" name="confirmPassword">
           </div>
           <div class="form-group">
-            <label>واحد سازمانی</label>
+            <label>واحد سازمانی <span class="required">*</span></label>
             <select [(ngModel)]="userForm.departmentId" name="departmentId">
               <option [ngValue]="null">بدون واحد</option>
               <option *ngFor="let dept of departments" [value]="dept.id">{{ dept.name }}</option>
             </select>
           </div>
           <div class="form-group">
-            <label>سمت</label>
+            <label>سمت <span class="required">*</span></label>
             <select [(ngModel)]="userForm.positionId" name="positionId">
               <option [ngValue]="null">بدون سمت</option>
               <option *ngFor="let pos of positions" [value]="pos.id">{{ pos.name }}</option>
             </select>
           </div>
           <div class="form-group">
-            <label>شماره پرسنلی</label>
+            <label>شماره پرسنلی <span class="required">*</span></label>
             <input type="text" [(ngModel)]="userForm.employeeId" name="employeeId">
           </div>
           <div class="form-group" *ngIf="editingUser">
@@ -2555,6 +2555,10 @@ export class AdminComponent implements OnInit {
   }
 
   deleteUser(user: any): void {
+    if (this.isAdministratorUser(user)) {
+      alert('حساب‌های مدیر سیستم قابل حذف نیستند');
+      return;
+    }
     const msg = `آیا از حذف دائمی کاربر «${user.firstName} ${user.lastName}» اطمینان دارید؟\n\nاین عملیات تمام داده‌های مرتبط با کاربر (امتیازها، آزمون‌ها، اطلاع‌رسانی‌ها) را حذف می‌کند و قابل بازگشت نیست.\n\nاگر فقط می‌خواهید کاربر به سامانه دسترسی نداشته باشد، از «غیرفعال کردن» استفاده کنید.`;
     if (!confirm(msg)) return;
     this.http.delete(`${this.apiUrl}/admin/users/${user.id}`).subscribe({
@@ -2565,6 +2569,10 @@ export class AdminComponent implements OnInit {
       },
       error: (err) => alert('خطا در حذف کاربر: ' + (err.error?.message || err.message))
     });
+  }
+
+  isAdministratorUser(user: any): boolean {
+    return user.username === 'admin' || (user.roles || []).includes('Administrator');
   }
 
   closeUserModal(): void {
@@ -2688,16 +2696,19 @@ export class AdminComponent implements OnInit {
         error: (err) => alert('خطا در ویرایش کاربر: ' + (err.error?.message || err.message))
       });
     } else {
-      if (!this.userForm.password) {
-        alert('خطا: رمز عبور الزامی است');
-        return;
-      }
-      if (this.userForm.password !== this.userForm.confirmPassword) {
-        alert('خطا: تکرار رمز عبور مطابقت ندارد');
-        return;
-      }
-      if (!this.userForm.username || !this.userForm.email) {
-        alert('خطا: نام کاربری و ایمیل الزامی است');
+      // All required fields must be completed before the account can be saved
+      const missing: string[] = [];
+      if (!this.userForm.username || !this.userForm.username.trim()) missing.push('نام کاربری');
+      if (!this.userForm.email || !this.userForm.email.trim()) missing.push('ایمیل');
+      if (!this.userForm.firstName || !this.userForm.firstName.trim()) missing.push('نام');
+      if (!this.userForm.lastName || !this.userForm.lastName.trim()) missing.push('نام خانوادگی');
+      if (!this.userForm.password) missing.push('رمز عبور');
+      if (this.userForm.password !== this.userForm.confirmPassword) missing.push('تکرار رمز عبور (مطابقت ندارد)');
+      if (!this.userForm.employeeId || !this.userForm.employeeId.trim()) missing.push('شماره پرسنلی');
+      if (!this.userForm.departmentId) missing.push('واحد سازمانی');
+      if (!this.userForm.positionId) missing.push('سمت سازمانی');
+      if (missing.length > 0) {
+        alert('تکمیل موارد زیر الزامی است:\n• ' + missing.join('\n• '));
         return;
       }
       this.http.post<any>(`${this.apiUrl}/admin/users`, this.userForm).subscribe({

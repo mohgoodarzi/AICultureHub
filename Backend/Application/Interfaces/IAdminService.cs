@@ -7,7 +7,7 @@ public interface IAdminService
 {
     Task<PaginatedResult<UserDto>> GetUsersAsync(PagedRequest request);
     Task<UserDto?> GetUserByIdAsync(int id);
-    Task<UserDto> CreateUserAsync(RegisterRequest request);
+    Task<UserDto> CreateUserAsync(RegisterRequest request, string? createdFromHost = null);
     Task<UserDto?> UpdateUserAsync(int id, UpdateProfileRequest request);
     Task<UserDto?> AdminUpdateUserAsync(int id, AdminUpdateUserRequest request);
     Task<bool> DeactivateUserAsync(int id);

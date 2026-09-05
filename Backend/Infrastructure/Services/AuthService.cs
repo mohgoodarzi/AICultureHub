@@ -67,7 +67,7 @@ public class AuthService : IAuthService
         };
     }
 
-    public async Task<LoginResponse> RegisterAsync(RegisterRequest request)
+    public async Task<LoginResponse> RegisterAsync(RegisterRequest request, string? createdFromHost = null)
     {
         if (string.IsNullOrWhiteSpace(request.Username) || request.Username.Trim().Length < 3)
             throw new InvalidOperationException("Username must be at least 3 characters");
@@ -110,6 +110,7 @@ public class AuthService : IAuthService
             DepartmentId = request.DepartmentId,
             PositionId = request.PositionId,
             EmployeeId = string.IsNullOrWhiteSpace(request.EmployeeId) ? null : request.EmployeeId.Trim(),
+            CreatedFromHost = createdFromHost,
             CurrentLevelId = 1,
             IsActive = true,
             IsEmailVerified = true,

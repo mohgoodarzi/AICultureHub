@@ -36,14 +36,32 @@ public class AdminService : IAdminService
         return new UserDto { Id = user.Id, Username = user.Username, Email = user.Email, FirstName = user.FirstName, LastName = user.LastName, FullName = user.FullName, DepartmentId = user.DepartmentId, DepartmentName = user.Department?.Name, PositionId = user.PositionId, PositionName = user.Position?.Name, Location = user.Location, EmployeeId = user.EmployeeId, AvatarUrl = user.AvatarUrl, Bio = user.Bio, IsActive = user.IsActive, TotalPoints = user.TotalPoints, CurrentLevelPoints = user.CurrentLevelPoints, LearningStreak = user.LearningStreak, CurrentLevel = user.CurrentLevel != null ? new LevelDto { Id = user.CurrentLevel.Id, LevelNumber = user.CurrentLevel.LevelNumber, Name = user.CurrentLevel.Name, Description = user.CurrentLevel.Description, PointsRequired = user.CurrentLevel.PointsRequired, Color = user.CurrentLevel.Color } : null, Roles = user.UserRoles.Select(ur => ur.Role.Name).ToList(), Badges = user.Badges.Select(ub => new BadgeDto { Id = ub.Badge.Id, Name = ub.Badge.Name, Description = ub.Badge.Description, Color = ub.Badge.Color, EarnedDate = ub.EarnedDate }).ToList() };
     }
 
-    public async Task<UserDto> CreateUserAsync(RegisterRequest request)
+    public async Task<UserDto> CreateUserAsync(RegisterRequest request, string? createdFromHost = null)
     {
+        // Mandatory field validation
+        if (string.IsNullOrWhiteSpace(request.Username) || request.Username.Trim().Length < 3)
+            throw new InvalidOperationException("نام کاربری الزامی است (حداقل ۳ کاراکتر)");
+        if (string.IsNullOrWhiteSpace(request.Email) || !request.Email.Contains("@"))
+            throw new InvalidOperationException("ایمیل معتبر الزامی است");
+        if (string.IsNullOrWhiteSpace(request.Password) || request.Password.Length < 6)
+            throw new InvalidOperationException("رمز عبور الزامی است (حداقل ۶ کاراکتر)");
+        if (string.IsNullOrWhiteSpace(request.FirstName))
+            throw new InvalidOperationException("نام الزامی است");
+        if (string.IsNullOrWhiteSpace(request.LastName))
+            throw new InvalidOperationException("نام خانوادگی الزامی است");
+        if (string.IsNullOrWhiteSpace(request.EmployeeId))
+            throw new InvalidOperationException("شماره پرسنلی الزامی است");
+        if (!request.DepartmentId.HasValue)
+            throw new InvalidOperationException("واحد سازمانی الزامی است");
+        if (!request.PositionId.HasValue)
+            throw new InvalidOperationException("سمت سازمانی الزامی است");
+
         if (await _context.Users.AnyAsync(u => u.Username == request.Username)) throw new InvalidOperationException("Username already exists");
         if (await _context.Users.AnyAsync(u => u.Email == request.Email)) throw new InvalidOperationException("Email already exists");
         if (!string.IsNullOrWhiteSpace(request.EmployeeId) && await _context.Users.AnyAsync(u => u.EmployeeId == request.EmployeeId.Trim()))
             throw new InvalidOperationException("این شماره پرسنلی قبلاً در سامانه ثبت شده است");
         var salt = GenerateSalt();
-        var user = new User { Username = request.Username, Email = request.Email, PasswordHash = HashPassword(request.Password, salt), PasswordSalt = salt, FirstName = request.FirstName, LastName = request.LastName, DepartmentId = request.DepartmentId, PositionId = request.PositionId, EmployeeId = request.EmployeeId, CurrentLevelId = 1, IsActive = true, IsEmailVerified = true, CreatedDate = DateTime.UtcNow };
+        var user = new User { Username = request.Username, Email = request.Email, PasswordHash = HashPassword(request.Password, salt), PasswordSalt = salt, FirstName = request.FirstName, LastName = request.LastName, DepartmentId = request.DepartmentId, PositionId = request.PositionId, EmployeeId = request.EmployeeId, CurrentLevelId = 1, IsActive = true, IsEmailVerified = true, CreatedDate = DateTime.UtcNow, CreatedFromHost = createdFromHost };
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
         var employeeRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "Employee");
@@ -134,12 +152,16 @@ public class AdminService : IAdminService
         var user = await _context.Users.FindAsync(id);
         if (user == null) return;
 
-        // Safety: cannot delete the primary administrator account (lockout prevention)
+        // Safety: administrator accounts can never be deleted (primary admin by username
+        // AND any user holding the Administrator role)
         if (user.Username == "admin")
             throw new InvalidOperationException("حساب کاربری مدیر اصلی قابل حذف نیست");
 
-        // Safety: an administrator cannot delete their own account while logged in
-        // (the controller also blocks self-delete as a second layer)
+        var isAdminRole = await _context.UserRoles
+            .Include(ur => ur.Role)
+            .AnyAsync(ur => ur.UserId == id && ur.Role.Name == "Administrator");
+        if (isAdminRole)
+            throw new InvalidOperationException("حساب‌های دارای نقش مدیر سیستم (Administrator) قابل حذف نیستند. ابتدا نقش Administrator را از کاربر حذف کنید.");
 
         // Detach authored content instead of cascading deletion (preserve organizational content)
         var articles = await _context.Articles.Where(a => a.AuthorId == id).ToListAsync();

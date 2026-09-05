@@ -43,7 +43,7 @@ public class AdminController : ControllerBase
     {
         try
         {
-            var user = await _adminService.CreateUserAsync(request);
+            var user = await _adminService.CreateUserAsync(request, GetClientHostName());
             return CreatedAtAction(nameof(GetUser), new { id = user.Id }, user);
         }
         catch (InvalidOperationException ex)
@@ -362,6 +362,22 @@ public class AdminController : ControllerBase
         catch (InvalidOperationException ex)
         {
             return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    private string? GetClientHostName()
+    {
+        try
+        {
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+            if (string.IsNullOrEmpty(ip)) return null;
+            var entry = System.Net.Dns.GetHostEntry(ip);
+            return entry?.HostName;
+        }
+        catch
+        {
+            // Reverse DNS not resolvable - fall back to the IP so provenance is still recorded
+            return HttpContext.Connection.RemoteIpAddress?.ToString();
         }
     }
 

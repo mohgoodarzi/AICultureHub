@@ -21,9 +21,10 @@ public class User : AuditableEntity
     public int CurrentLevelPoints { get; set; } = 0;
     public int LearningStreak { get; set; } = 0;
     public int? ThemeId { get; set; }
-    public bool IsEmailVerified { get; set; } = false;
-    public bool IsActive { get; set; } = true;
-    public DateTime? LastLoginDate { get; set; }
+public bool IsEmailVerified { get; set; } = false;
+public bool IsActive { get; set; } = true;
+public DateTime? LastLoginDate { get; set; }
+public string? CreatedFromHost { get; set; }
 
     public virtual User? CreatedByUser { get; set; }
     public virtual Department? Department { get; set; }

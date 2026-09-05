@@ -42,7 +42,7 @@ public class AuthController : ControllerBase
     {
         try
         {
-            var result = await _authService.RegisterAsync(request);
+            var result = await _authService.RegisterAsync(request, GetClientHostName());
             return Ok(result);
         }
         catch (InvalidOperationException ex)
@@ -108,6 +108,21 @@ public class AuthController : ControllerBase
         await dbContext.SaveChangesAsync();
 
         return Ok(new { avatarUrl = user.AvatarUrl, message = "تصویر پروفایل ذخیره شد" });
+    }
+
+    private string? GetClientHostName()
+    {
+        try
+        {
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+            if (string.IsNullOrEmpty(ip)) return null;
+            var entry = System.Net.Dns.GetHostEntry(ip);
+            return entry?.HostName;
+        }
+        catch
+        {
+            return HttpContext.Connection.RemoteIpAddress?.ToString();
+        }
     }
 
     /// <summary>
