@@ -11,6 +11,7 @@ public interface IAdminService
     Task<UserDto?> UpdateUserAsync(int id, UpdateProfileRequest request);
     Task<UserDto?> AdminUpdateUserAsync(int id, AdminUpdateUserRequest request);
     Task<bool> DeactivateUserAsync(int id);
+    Task DeleteUserAsync(int id);
     Task<bool> ActivateUserAsync(int id);
     Task<bool> AssignRoleAsync(int userId, string roleName);
     Task<bool> RemoveRoleAsync(int userId, string roleName);

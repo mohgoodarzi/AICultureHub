@@ -112,6 +112,27 @@ public class AdminController : ControllerBase
         return Ok(new { message = "Role removed" });
     }
 
+    [HttpDelete("users/{id}")]
+    public async Task<IActionResult> DeleteUser(int id)
+    {
+        try
+        {
+            // An administrator cannot delete their own account (lockout prevention)
+            var currentUserId = GetCurrentUserId();
+            if (currentUserId == id)
+            {
+                return BadRequest(new { message = "نمی‌توانید حساب کاربری خودتان را حذف کنید" });
+            }
+
+            await _adminService.DeleteUserAsync(id);
+            return Ok(new { message = "کاربر با موفقیت حذف شد" });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     [HttpGet("analytics")]
     public async Task<IActionResult> GetAnalytics()
     {

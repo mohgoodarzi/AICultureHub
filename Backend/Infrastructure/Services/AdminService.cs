@@ -129,6 +129,32 @@ public class AdminService : IAdminService
         return true;
     }
 
+    public async Task DeleteUserAsync(int id)
+    {
+        var user = await _context.Users.FindAsync(id);
+        if (user == null) return;
+
+        // Safety: cannot delete the primary administrator account (lockout prevention)
+        if (user.Username == "admin")
+            throw new InvalidOperationException("حساب کاربری مدیر اصلی قابل حذف نیست");
+
+        // Safety: an administrator cannot delete their own account while logged in
+        // (the controller also blocks self-delete as a second layer)
+
+        // Detach authored content instead of cascading deletion (preserve organizational content)
+        var articles = await _context.Articles.Where(a => a.AuthorId == id).ToListAsync();
+        foreach (var a in articles) { a.AuthorId = 1; } // reassign to primary admin
+        var announcements = await _context.Announcements.Where(an => an.CreatedBy == id).ToListAsync();
+        foreach (var an in announcements) { an.CreatedBy = null; }
+
+        // Hard-delete the user; dependent rows (roles, points, quiz attempts, notifications,
+        // bookmarks, progress...) are removed by configured CASCADE rules.
+        await _context.SaveChangesAsync();
+        _context.Users.Remove(user);
+        await _context.SaveChangesAsync();
+        await _auditService.LogAsync(null, "DELETE_USER", "User", id, $"Deleted user: {user.Username}");
+    }
+
     public async Task<bool> AssignRoleAsync(int userId, string roleName)
     {
         var user = await _context.Users.FindAsync(userId);

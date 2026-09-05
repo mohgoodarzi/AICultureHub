@@ -299,6 +299,32 @@ using (var scope = app.Services.CreateScope())
             }
         }
 
+        // Employees get access to ALL user-facing sections; the Admin Panel remains exclusive to
+        // the Administrator role (nav, AdminGuard and RequireAdministrator all check that role).
+        // One-time bootstrap: afterwards the administrator can customize the role via the Roles tab.
+        var employeeSyncDone = dbContext.SystemSettings.Any(s => s.SettingKey == "Employee_AllPermissions_Bootstrap");
+        if (!employeeSyncDone)
+        {
+            var employeeRoleSync = dbContext.Roles.Include(r => r.RolePermissions).FirstOrDefault(r => r.Name == "Employee");
+            if (employeeRoleSync != null)
+            {
+                var allPermIds2 = existingByCode.Values.Where(p => p.IsActive).Select(p => p.Id).ToList();
+                var empOwned = employeeRoleSync.RolePermissions.Select(rp => rp.PermissionId).ToHashSet();
+                var missingEmp = allPermIds2.Where(id => !empOwned.Contains(id)).ToList();
+                if (missingEmp.Any())
+                {
+                    foreach (var pid in missingEmp)
+                    {
+                        dbContext.RolePermissions.Add(new RolePermission { RoleId = employeeRoleSync.Id, PermissionId = pid });
+                    }
+                    dbContext.SaveChanges();
+                    Console.WriteLine($"Granted {missingEmp.Count} missing permissions to Employee role (all except Admin Panel which requires Administrator).");
+                }
+                dbContext.SystemSettings.Add(new SystemSetting { SettingKey = "Employee_AllPermissions_Bootstrap", SettingValue = "true", Description = "Employee role full-permission bootstrap flag", Category = "Roles", IsActive = true, CreatedDate = DateTime.UtcNow });
+                dbContext.SaveChanges();
+            }
+        }
+
         if (!dbContext.Permissions.Any())
         {
             var permissions = new List<Permission>

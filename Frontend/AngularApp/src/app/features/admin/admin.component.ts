@@ -392,7 +392,15 @@ export class CompactJoinPipe implements PipeTransform {
           </thead>
           <tbody>
             <tr *ngFor="let user of users">
-              <td>{{ user.firstName }} {{ user.lastName }}</td>
+              <td>
+                <div class="user-cell">
+                  <div class="user-avatar-sm">
+                    <img *ngIf="user.avatarUrl" [src]="user.avatarUrl" [alt]="user.fullName">
+                    <span *ngIf="!user.avatarUrl">{{ (user.firstName || '؟')?.charAt(0) }}</span>
+                  </div>
+                  <span>{{ user.firstName }} {{ user.lastName }}</span>
+                </div>
+              </td>
               <td>{{ user.employeeId || '-' }}</td>
               <td>{{ user.email }}</td>
               <td>{{ [user.departmentName, user.positionName] | compactJoin }}</td>
@@ -409,6 +417,7 @@ export class CompactJoinPipe implements PipeTransform {
                 <button class="btn-toggle" [class.deactivated]="user.isActive" (click)="toggleUserActive(user)">
                   {{ user.isActive ? 'غیرفعال کردن' : 'فعال کردن' }}
                 </button>
+                <button class="btn-delete" (click)="deleteUser(user)">حذف</button>
               </td>
             </tr>
             <tr *ngIf="users.length === 0">
@@ -1372,6 +1381,54 @@ export class CompactJoinPipe implements PipeTransform {
     .modal-header h3 { margin: 0; font-size: 1.05rem; font-weight: 800; color: var(--theme-text); }
 
     .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
+
+    /* Avatar upload widget (user modal) - keeps preview at a fixed professional size */
+    .avatar-upload { display: flex; align-items: center; gap: 16px; }
+    .avatar-preview {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      overflow: hidden;
+      flex-shrink: 0;
+      border: 2px solid var(--theme-border);
+      background: var(--theme-surface-hover);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .avatar-preview img {
+      width: 100%;
+      height: 100%;
+      max-width: none;
+      object-fit: cover;
+      display: block;
+    }
+    .avatar-fallback { font-size: 1.4rem; font-weight: 800; color: var(--theme-text-muted); }
+    .avatar-actions { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+    .avatar-actions small { color: var(--theme-text-muted); font-size: 0.72rem; }
+
+    /* Small avatar thumbnails in the users table */
+    .user-cell { display: flex; align-items: center; gap: 10px; }
+    .user-avatar-sm {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      overflow: hidden;
+      flex-shrink: 0;
+      border: 1.5px solid var(--theme-border);
+      background: var(--theme-surface-hover);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .user-avatar-sm img {
+      width: 100%;
+      height: 100%;
+      max-width: none;
+      object-fit: cover;
+      display: block;
+    }
+    .user-avatar-sm span { font-size: 0.8rem; font-weight: 800; color: var(--theme-text-secondary); }
 
     .quiz-questions-editor { margin-top: 10px; }
     .qq-header { display: flex; justify-content: space-between; align-items: center; margin: 18px 0 12px 0; }
@@ -2376,6 +2433,19 @@ export class AdminComponent implements OnInit {
         this.loadUsers();
       },
       error: (err) => alert('خطا: ' + (err.error?.message || err.message))
+    });
+  }
+
+  deleteUser(user: any): void {
+    const msg = `آیا از حذف دائمی کاربر «${user.firstName} ${user.lastName}» اطمینان دارید؟\n\nاین عملیات تمام داده‌های مرتبط با کاربر (امتیازها، آزمون‌ها، اطلاع‌رسانی‌ها) را حذف می‌کند و قابل بازگشت نیست.\n\nاگر فقط می‌خواهید کاربر به سامانه دسترسی نداشته باشد، از «غیرفعال کردن» استفاده کنید.`;
+    if (!confirm(msg)) return;
+    this.http.delete(`${this.apiUrl}/admin/users/${user.id}`).subscribe({
+      next: () => {
+        alert('کاربر با موفقیت حذف شد');
+        this.loadUsers();
+        this.loadAnalytics();
+      },
+      error: (err) => alert('خطا در حذف کاربر: ' + (err.error?.message || err.message))
     });
   }
 
