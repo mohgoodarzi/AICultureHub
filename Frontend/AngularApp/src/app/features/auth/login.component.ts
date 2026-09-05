@@ -1,7 +1,7 @@
 import { Component, ElementRef, ViewChild, AfterViewInit, OnDestroy, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ThemeService } from '../../core/services/theme.service';
 
@@ -62,6 +62,9 @@ interface DataPacket {
             <img src="assets/logo.png" alt="شرکت طراحی و ساختمان نفت" class="login-logo">
             <h1>شرکت طراحی و ساختمان نفت</h1>
             <p>برای ادامه وارد حساب خود شوید</p>
+          </div>
+          <div class="register-success" *ngIf="registeredSuccess">
+            ✅ حساب کاربری شما با موفقیت ایجاد شد — لطفاً با نام کاربری و رمز عبور خود وارد شوید
           </div>
           <form (ngSubmit)="onSubmit()" #loginForm="ngForm">
             <div class="form-group">
@@ -356,6 +359,19 @@ interface DataPacket {
     .login-header h1 { margin: 0 0 6px 0; font-size: 1.25rem; color: #ffffff; font-weight: 800; text-shadow: 0 2px 12px rgba(0,0,0,0.4); }
     .login-header p { color: rgba(255,255,255,0.85); margin: 0; font-size: 0.88rem; text-shadow: 0 1px 8px rgba(0,0,0,0.4); }
 
+    .register-success {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1.5px solid rgba(16, 185, 129, 0.45);
+      color: #0f8a5f;
+      font-weight: 700;
+      font-size: 0.85rem;
+      padding: 12px 16px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      text-align: center;
+      line-height: 1.8;
+    }
+
     .form-group { margin-bottom: 20px; }
     .form-group label {
       display: block;
@@ -449,6 +465,7 @@ export class LoginComponent implements AfterViewInit, OnDestroy {
   credentials = { username: '', password: '' };
   isLoading = false;
   errorMessage = '';
+  registeredSuccess = false;
 
   @ViewChild('neuralCanvas') neuralCanvas!: ElementRef<HTMLCanvasElement>;
   private ctx: CanvasRenderingContext2D | null = null;
@@ -473,11 +490,13 @@ export class LoginComponent implements AfterViewInit, OnDestroy {
   constructor(
     private authService: AuthService,
     private router: Router,
+    private route: ActivatedRoute,
     private themeService: ThemeService,
     private zone: NgZone
   ) {}
 
   ngAfterViewInit(): void {
+    this.registeredSuccess = this.route.snapshot.queryParamMap.get('registered') === '1';
     this.initNeuralCanvas();
   }
 

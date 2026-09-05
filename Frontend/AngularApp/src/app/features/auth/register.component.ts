@@ -315,22 +315,20 @@ export class RegisterComponent implements OnInit {
     this.errorMessage = '';
     this.authService.register(this.user as any).subscribe({
       next: (response: any) => {
-        // Registration returns LoginResponse (token + user): persist session,
-        // upload the selected profile photo for the new account, then enter the dashboard.
-        if (response?.token) {
-          localStorage.setItem('token', response.token);
-          localStorage.setItem('tokenExpiry', new Date(Date.now() + 60 * 60 * 1000).toISOString());
-          localStorage.setItem('user', JSON.stringify(response.user));
-        }
-        if (this.avatarFile) {
+        // No auto-login: do NOT persist the token/session. The account is created only;
+        // the user must authenticate manually on the Login page.
+        if (this.avatarFile && response?.token) {
+          // Upload the profile photo using the one-time registration token
+          // (explicit header only - nothing is stored, no session is created)
           const formData = new FormData();
           formData.append('file', this.avatarFile);
-          this.http.post(`${environment.apiUrl}/auth/avatar`, formData).subscribe({
-            next: () => { this.router.navigate(['/dashboard']); },
-            error: () => { this.router.navigate(['/dashboard']); }
+          const headers = { Authorization: `Bearer ${response.token}` };
+          this.http.post(`${environment.apiUrl}/auth/avatar`, formData, { headers }).subscribe({
+            next: () => { this.router.navigate(['/login'], { queryParams: { registered: '1' } }); },
+            error: () => { this.router.navigate(['/login'], { queryParams: { registered: '1' } }); }
           });
         } else {
-          this.router.navigate(['/dashboard']);
+          this.router.navigate(['/login'], { queryParams: { registered: '1' } });
         }
       },
       error: (err) => { this.errorMessage = err.error?.message || 'خطا در ثبت‌نام'; this.isLoading = false; }
