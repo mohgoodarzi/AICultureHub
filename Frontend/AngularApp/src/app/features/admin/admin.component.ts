@@ -2265,7 +2265,8 @@ export class AdminComponent implements OnInit {
 
   openUserModal(): void {
     this.editingUser = null;
-    this.userForm = { username: '', email: '', firstName: '', lastName: '', password: '', confirmPassword: '', departmentId: null, positionId: null, employeeId: '', isActive: true };
+    this.pendingAvatarFile = null;
+    this.userForm = { username: '', email: '', firstName: '', lastName: '', password: '', confirmPassword: '', departmentId: null, positionId: null, employeeId: '', isActive: true, avatarUrl: '' };
     this.loadDepartments();
     this.loadPositions();
     this.showUserModal = true;
