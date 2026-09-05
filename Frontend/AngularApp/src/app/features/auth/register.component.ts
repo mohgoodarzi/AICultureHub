@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -69,6 +69,24 @@ import { environment } from '../../../environments/environment';
                 <option *ngFor="let pos of positions" [ngValue]="pos.id">{{ pos.name }}</option>
               </select>
             </div>
+          </div>
+          <div class="form-group">
+            <label>تصویر پروفایل (اختیاری)</label>
+            <div class="avatar-picker">
+              <div class="avatar-preview">
+                <img *ngIf="avatarPreview; else defaultAv" [src]="avatarPreview" alt="پیش‌نمایش تصویر">
+                <ng-template #defaultAv>
+                  <div class="avatar-initial">?</div>
+                </ng-template>
+              </div>
+              <div class="avatar-picker-actions">
+                <input type="file" accept="image/jpeg,image/png,image/webp" (change)="onAvatarSelected($event)" #avatarInput hidden>
+                <button type="button" class="avatar-btn" (click)="avatarInput.click()">انتخاب تصویر</button>
+                <button type="button" class="avatar-btn remove" (click)="removeAvatar()" *ngIf="avatarPreview">حذف</button>
+                <small>JPG/PNG/WebP — حداکثر ۱۰ مگابایت</small>
+              </div>
+            </div>
+            <div class="avatar-error" *ngIf="avatarError">{{ avatarError }}</div>
           </div>
           <div class="error-message" *ngIf="errorMessage">{{ errorMessage }}</div>
           <button type="submit" class="btn-primary" [disabled]="isLoading">
@@ -180,6 +198,41 @@ import { environment } from '../../../environments/environment';
     .register-footer a { color: var(--theme-primary); text-decoration: none; font-weight: 800; }
     .register-footer a:hover { text-decoration: underline; }
 
+    /* Profile photo picker */
+    .avatar-picker { display: flex; align-items: center; gap: 16px; }
+    .avatar-preview {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      overflow: hidden;
+      flex-shrink: 0;
+      border: 2px solid var(--theme-border);
+      background: var(--theme-surface-hover);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .avatar-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .avatar-initial { font-size: 1.5rem; font-weight: 800; color: var(--theme-text-muted); }
+    .avatar-picker-actions { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+    .avatar-picker-actions small { color: var(--theme-text-muted); font-size: 0.72rem; }
+    .avatar-btn {
+      padding: 8px 16px;
+      border: 1.5px solid var(--theme-primary);
+      background: var(--theme-surface);
+      color: var(--theme-primary);
+      border-radius: 10px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 700;
+      transition: all 0.2s ease;
+    }
+    .avatar-btn:hover { background: color-mix(in srgb, var(--theme-primary) 10%, transparent); }
+    .avatar-btn.remove { border-color: var(--theme-error); color: var(--theme-error); }
+    .avatar-btn.remove:hover { background: color-mix(in srgb, var(--theme-error) 10%, transparent); }
+    .avatar-error { color: var(--theme-error); font-size: 0.78rem; margin-top: 6px; }
+
     @media (max-width: 560px) {
       .form-row { grid-template-columns: 1fr; gap: 0; }
       .register-card { padding: 32px 24px; }
@@ -201,6 +254,10 @@ export class RegisterComponent implements OnInit {
   positions: any[] = [];
   isLoading = false;
   errorMessage = '';
+  avatarFile: File | null = null;
+  avatarPreview: string | null = null;
+  avatarError = '';
+  @ViewChild('avatarInput') avatarInput?: ElementRef<HTMLInputElement>;
 
   constructor(
     private authService: AuthService,
@@ -224,12 +281,58 @@ export class RegisterComponent implements OnInit {
     });
   }
 
+  onAvatarSelected(event: any): void {
+    const file = event.target.files[0];
+    if (!file) return;
+    const allowed = ['.jpg', '.jpeg', '.png', '.webp'];
+    const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    if (!allowed.includes(ext)) {
+      this.avatarError = 'فقط تصاویر JPG، PNG یا WebP مجاز هستند';
+      event.target.value = '';
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      this.avatarError = 'حجم تصویر نباید بیشتر از ۱۰ مگابایت باشد';
+      event.target.value = '';
+      return;
+    }
+    this.avatarError = '';
+    this.avatarFile = file;
+    const reader = new FileReader();
+    reader.onload = () => this.avatarPreview = reader.result as string;
+    reader.readAsDataURL(file);
+  }
+
+  removeAvatar(): void {
+    this.avatarFile = null;
+    this.avatarPreview = null;
+    if (this.avatarInput) this.avatarInput.nativeElement.value = '';
+  }
+
   onSubmit(): void {
     if (this.isLoading) return;
     this.isLoading = true;
     this.errorMessage = '';
     this.authService.register(this.user as any).subscribe({
-      next: () => { this.router.navigate(['/dashboard']); },
+      next: (response: any) => {
+        // Registration returns LoginResponse (token + user): persist session,
+        // upload the selected profile photo for the new account, then enter the dashboard.
+        if (response?.token) {
+          localStorage.setItem('token', response.token);
+          localStorage.setItem('tokenExpiry', new Date(Date.now() + 60 * 60 * 1000).toISOString());
+          localStorage.setItem('user', JSON.stringify(response.user));
+        }
+        if (this.avatarFile) {
+          const formData = new FormData();
+          formData.append('file', this.avatarFile);
+          this.http.post(`${environment.apiUrl}/auth/avatar`, formData).subscribe({
+            next: () => { this.router.navigate(['/dashboard']); },
+            error: () => { this.router.navigate(['/dashboard']); }
+          });
+        } else {
+          this.router.navigate(['/dashboard']);
+        }
+      },
       error: (err) => { this.errorMessage = err.error?.message || 'خطا در ثبت‌نام'; this.isLoading = false; }
     });
   }

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using AICultureHub.Application.DTOs;
 using AICultureHub.Application.Interfaces;
+using AICultureHub.Infrastructure.Data;
 
 namespace AICultureHub.API.Controllers;
 
@@ -57,6 +58,57 @@ public class AuthController : ControllerBase
     /// Public lookup lists for the anonymous registration form (units/departments and positions).
     /// Read-only master data; only active entries are returned.
     /// </summary>
+    /// <summary>
+    /// Upload profile photo for the CURRENTLY AUTHENTICATED user (used right after
+    /// public registration, and available for self-service profile updates).
+    /// </summary>
+    [Authorize]
+    [HttpPost("avatar")]
+    public async Task<IActionResult> UploadMyAvatar(IFormFile file, [FromServices] IWebHostEnvironment env, [FromServices] ApplicationDbContext dbContext)
+    {
+        var userId = GetCurrentUserId();
+        if (userId <= 0) return Unauthorized();
+
+        var user = await dbContext.Users.FindAsync(userId);
+        if (user == null) return NotFound(new { message = "کاربر یافت نشد" });
+
+        if (file == null || file.Length == 0)
+            return BadRequest(new { message = "فایلی انتخاب نشده است" });
+
+        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+        var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+        if (!allowedExtensions.Contains(ext))
+            return BadRequest(new { message = "فقط تصاویر JPG، PNG یا WebP مجاز هستند" });
+
+        var (maxImageMB, _) = UploadController.GetLimits(dbContext);
+        var maxBytes = maxImageMB * 1024L * 1024L;
+        if (file.Length > maxBytes)
+            return BadRequest(new { message = $"حجم تصویر نباید بیشتر از {maxImageMB} مگابایت باشد" });
+
+        var avatarsFolder = Path.Combine(env.ContentRootPath, "wwwroot", "uploads", "avatars");
+        Directory.CreateDirectory(avatarsFolder);
+
+        // Remove old avatar file if it belongs to uploads/avatars
+        if (!string.IsNullOrEmpty(user.AvatarUrl) && user.AvatarUrl.StartsWith("/uploads/avatars/"))
+        {
+            var oldPath = Path.Combine(env.ContentRootPath, "wwwroot", user.AvatarUrl.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+            if (System.IO.File.Exists(oldPath)) System.IO.File.Delete(oldPath);
+        }
+
+        var fileName = $"{userId}-{Guid.NewGuid()}{ext}";
+        var filePath = Path.Combine(avatarsFolder, fileName);
+        using (var stream = new FileStream(filePath, FileMode.Create))
+        {
+            await file.CopyToAsync(stream);
+        }
+
+        user.AvatarUrl = $"/uploads/avatars/{fileName}";
+        user.ModifiedDate = DateTime.UtcNow;
+        await dbContext.SaveChangesAsync();
+
+        return Ok(new { avatarUrl = user.AvatarUrl, message = "تصویر پروفایل ذخیره شد" });
+    }
+
     [HttpGet("departments")]
     public async Task<IActionResult> GetPublicDepartments([FromServices] IAdminService adminService)
     {
