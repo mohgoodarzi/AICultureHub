@@ -32,7 +32,8 @@ import { ShamsiDate } from '../../core/utils/shamsi-date';
       <div class="articles-grid">
         <div *ngFor="let article of articles" class="article-card-wrapper animate-pop">
           <a [routerLink]="['/articles', article.slug]" class="article-card">
-            <div class="article-image" *ngIf="article.imageUrl" [style.background-image]="'url(' + article.imageUrl + ')'">
+            <div class="article-image" *ngIf="article.imageUrl">
+              <img [src]="article.imageUrl" [alt]="article.title" loading="lazy">
               <div class="image-overlay"></div>
               <span class="category-badge">{{ article.category?.name }}</span>
             </div>
@@ -144,12 +145,23 @@ import { ShamsiDate } from '../../core/utils/shamsi-date';
 
     .article-image {
       height: 170px;
-      background-size: cover;
-      background-position: center;
       position: relative;
-      background-color: var(--theme-background);
+      background-color: var(--theme-surface-hover);
       overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
+    .article-image img {
+      max-width: 100%;
+      max-height: 100%;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      display: block;
+      transition: transform 0.3s ease;
+    }
+    .article-card:hover .article-image img { transform: scale(1.04); }
     .image-overlay {
       position: absolute;
       inset: 0;

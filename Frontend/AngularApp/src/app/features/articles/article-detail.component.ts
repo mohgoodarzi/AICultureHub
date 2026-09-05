@@ -35,6 +35,10 @@ import { AuthService } from '../../core/services/auth.service';
             <video [src]="article.videoUrl" controls preload="metadata" style="width:100%; border-radius:12px; margin-top:24px;"></video>
           </div>
 
+          <div class="article-hero-image" *ngIf="article.imageUrl">
+            <img [src]="article.imageUrl" [alt]="article.title">
+          </div>
+
           <div class="article-tags" *ngIf="article.tags?.length">
             <span class="tag" *ngFor="let tag of article.tags">#{{ tag.name }}</span>
           </div>
@@ -216,7 +220,26 @@ import { AuthService } from '../../core/services/auth.service';
       text-align: left;
     }
 
-    .article-tags { margin-top: 28px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .article-hero-image {
+            margin-top: 24px;
+            background: var(--theme-surface-hover);
+            border: 1px solid var(--theme-border);
+            border-radius: 14px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            max-height: 460px;
+          }
+          .article-hero-image img {
+            max-width: 100%;
+            max-height: 460px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            display: block;
+          }
+          .article-tags { margin-top: 28px; display: flex; gap: 8px; flex-wrap: wrap; }
     .tag {
       padding: 6px 14px;
       background: color-mix(in srgb, var(--theme-primary) 8%, transparent);
