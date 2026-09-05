@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { ShamsiDate } from '../utils/shamsi-date';
 
 export interface ActiveNotification {
   id: number;
@@ -39,7 +40,7 @@ export interface ActiveNotification {
         <div class="np-content" *ngIf="notification">{{ notification.content }}</div>
 
         <div class="np-footer">
-          <span class="np-date" *ngIf="notification">{{ notification.createdDate | date:'mediumDate' }}</span>
+          <span class="np-date" *ngIf="notification">{{ toShamsiDate(notification.createdDate) }}</span>
           <button class="np-btn" (click)="dismiss()">متوجه شدم</button>
         </div>
       </div>
@@ -64,6 +65,8 @@ export interface ActiveNotification {
       position: relative;
       width: 100%;
       max-width: 460px;
+      direction: rtl;
+      text-align: right;
       background: linear-gradient(160deg, #ffffff 0%, #f4f2fd 100%);
       border-radius: 22px;
       padding: 34px 30px 26px 30px;
@@ -159,8 +162,10 @@ export interface ActiveNotification {
       font-size: 1.25rem;
       font-weight: 800;
       color: var(--theme-text);
-      line-height: 1.6;
+      line-height: 1.8;
       position: relative;
+      text-align: right;
+      word-break: break-word;
     }
     .np-summary {
       margin: 0 0 12px 0;
@@ -168,15 +173,20 @@ export interface ActiveNotification {
       font-weight: 700;
       color: var(--theme-primary);
       position: relative;
+      text-align: right;
+      line-height: 1.8;
     }
     .np-content {
       font-size: 0.92rem;
-      line-height: 1.9;
+      line-height: 2;
       color: var(--theme-text-secondary);
       max-height: 220px;
       overflow-y: auto;
       white-space: pre-line;
       position: relative;
+      text-align: justify;
+      text-justify: inter-word;
+      word-break: break-word;
     }
 
     .np-footer {
@@ -246,6 +256,10 @@ export class NotificationPopupComponent implements OnInit {
       },
       error: () => { /* no notification or not logged in: show nothing */ }
     });
+  }
+
+  toShamsiDate(date: Date | string): string {
+    return ShamsiDate.format(date, 'date');
   }
 
   dismiss(): void {
