@@ -3,7 +3,6 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from './core/services/auth.service';
 import { ThemeService } from './core/services/theme.service';
-import { ShamsiDate } from './core/utils/shamsi-date';
 
 @Component({
   selector: 'app-root',
@@ -76,9 +75,7 @@ import { ShamsiDate } from './core/utils/shamsi-date';
             <button class="sidebar-toggle" (click)="toggleSidebar()" [class.active]="isExpanded">
               <span class="toggle-icon">☰</span>
             </button>
-            <div class="header-date">
-              <span class="date-label">{{ currentDate }}</span>
-            </div>
+
           </div>
           
           <div class="header-left">
@@ -398,14 +395,9 @@ import { ShamsiDate } from './core/utils/shamsi-date';
 
     .toggle-icon { font-size: 1.2rem; }
 
-    .header-date { display: flex; flex-direction: column; }
+    
 
-    .date-label {
-      font-size: 0.85rem;
-      color: var(--theme-text-secondary);
-      direction: rtl;
-      font-weight: 500;
-    }
+    
 
     /* Theme selector */
     .theme-selector { display: flex; align-items: center; gap: 10px; }
@@ -500,7 +492,7 @@ import { ShamsiDate } from './core/utils/shamsi-date';
 })
 export class AppComponent implements OnInit, OnDestroy {
   isExpanded = false;
-  currentDate = '';
+
   private dateInterval: any;
 
   constructor(
@@ -523,7 +515,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   updateDate(): void {
-    this.currentDate = ShamsiDate.format(new Date(), 'full');
+  
   }
 
   toggleSidebar() {
