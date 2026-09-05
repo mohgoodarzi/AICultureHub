@@ -6,7 +6,7 @@ namespace AICultureHub.Application.Interfaces;
 public interface IArticleService
 {
     Task<PaginatedResult<ArticleListDto>> GetArticlesAsync(PagedRequest request, int? categoryId = null, bool includeUnpublished = false);
-    Task<ArticleDto?> GetArticleBySlugAsync(string slug, int? userId = null);
+    Task<ArticleDto?> GetArticleBySlugAsync(string slug, int? userId = null, bool includeUnpublished = false);
     Task<ArticleDto?> GetArticleByIdAsync(int id, int? userId = null);
     Task<ArticleDto> CreateArticleAsync(CreateArticleRequest request, int createdBy);
     Task<ArticleDto?> UpdateArticleAsync(int id, UpdateArticleRequest request, int modifiedBy);

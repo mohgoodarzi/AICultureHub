@@ -31,9 +31,13 @@ public class ArticleService : IArticleService
         return new PaginatedResult<ArticleListDto> { Items = articles, TotalCount = totalCount, PageNumber = request.PageNumber, PageSize = request.PageSize };
     }
 
-    public async Task<ArticleDto?> GetArticleBySlugAsync(string slug, int? userId = null)
+    public async Task<ArticleDto?> GetArticleBySlugAsync(string slug, int? userId = null, bool includeUnpublished = false)
     {
-        var article = await _context.Articles.Include(a => a.Category).Include(a => a.Author).Include(a => a.ArticleTags).ThenInclude(at => at.Tag).FirstOrDefaultAsync(a => a.Slug == slug && a.IsActive && a.IsPublished);
+        // includeUnpublished lets administrators/authors preview drafts; public requests only see published.
+        var baseQuery = _context.Articles.Include(a => a.Category).Include(a => a.Author).Include(a => a.ArticleTags).ThenInclude(at => at.Tag);
+        var article = includeUnpublished
+            ? await baseQuery.FirstOrDefaultAsync(a => a.Slug == slug && a.IsActive)
+            : await baseQuery.FirstOrDefaultAsync(a => a.Slug == slug && a.IsActive && a.IsPublished);
         if (article == null) return null;
         var likeCount = await _context.ArticleFeedback.CountAsync(af => af.ArticleId == article.Id && af.IsLike);
         var dislikeCount = await _context.ArticleFeedback.CountAsync(af => af.ArticleId == article.Id && !af.IsLike);

@@ -86,7 +86,9 @@ public class ArticlesController : ControllerBase
     public async Task<IActionResult> GetArticle(string slug)
     {
         var userId = GetCurrentUserId();
-        var article = await _articleService.GetArticleBySlugAsync(slug, userId);
+        var isAuthenticated = User.Identity?.IsAuthenticated ?? false;
+        var includeUnpublished = isAuthenticated && await HasPermissionAsync(Permissions.Articles_Edit);
+        var article = await _articleService.GetArticleBySlugAsync(slug, userId, includeUnpublished);
         if (article == null) return NotFound();
         return Ok(article);
     }
