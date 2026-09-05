@@ -148,6 +148,36 @@ using (var scope = app.Services.CreateScope())
         // NULL/empty values are allowed (users without a personnel number) while duplicates are impossible.
         EnsureEmployeeIdUniqueIndex(dbContext);
 
+        // Seed the AI policy items once (admin can edit them afterwards via the Admin Panel)
+        if (!dbContext.AiPolicyItems.Any())
+        {
+            var policyItems = new (string Title, string Text)[]
+            {
+                ("حاکمیت", "کلیه کاربردهای هوش مصنوعی باید تحت چارچوب حاکمیت، مسئولیت‌پذیری و نظارت مدیریت ارشد و کمیته حاکمیت AI انجام شود."),
+                ("هم‌راستایی کسب‌وکار", "استفاده از AI باید در راستای اهداف استراتژیک، افزایش بهره‌وری، کیفیت، نوآوری و تحول دیجیتال شرکت باشد."),
+                ("اخلاق", "استفاده از هوش مصنوعی باید منصفانه، شفاف، مسئولانه و بدون تبعیض و سوءاستفاده انجام شود."),
+                ("نظارت انسانی و پاسخگویی", "استفاده از هوش مصنوعی در تمامی واحدها و فرایندهای سازمانی باید با نظارت انسانی متناسب با سطح ریسک انجام شود و مسئولیت بررسی، اعتبارسنجی و تصمیم‌گیری نهایی بر عهده فرد یا واحد مسئول باشد."),
+                ("امنیت", "سامانه‌ها و خدمات AI باید مطابق الزامات امنیت سایبری، مدیریت دسترسی، ثبت رویداد و حفاظت در برابر تهدیدات و سوءاستفاده‌ها به‌کار گرفته شوند."),
+                ("محرمانگی", "اطلاعات محرمانه، فنی، قراردادی، مالی، پروژه‌ای و اطلاعات کارفرمایان نباید بدون مجوز در ابزارهای عمومی هوش مصنوعی وارد یا پردازش شوند."),
+                ("حریم خصوصی", "جمع‌آوری و پردازش اطلاعات کارکنان و سایر داده‌های شخصی باید با رعایت الزامات قانونی و اصول حفاظت از حریم خصوصی انجام شود."),
+                ("صحت و قابلیت اعتماد", "خروجی‌های AI باید متناسب با سطح ریسک، از نظر صحت، اعتبار، سوگیری و قابلیت اتکا بررسی و اعتبارسنجی شوند."),
+                ("مدیریت ریسک", "کلیه کاربردهای AI باید قبل و بعد از استقرار، از نظر ریسک‌های فنی، عملیاتی، امنیتی، حقوقی و اخلاقی ارزیابی و پایش شوند."),
+                ("مالکیت فکری و قراردادها", "استفاده از AI باید با رعایت حقوق مالکیت فکری، حقوق کارفرمایان، الزامات قراردادها و محدودیت‌های مربوط به داده و محتوا انجام شود."),
+                ("فرهنگ و آموزش", "شرکت متعهد به توسعه فرهنگ استفاده مسئولانه از AI و آموزش مستمر مدیران و کارکنان برای بهره‌برداری ایمن و مؤثر از آن است."),
+                ("بهبود مستمر", "کلیه سامانه‌ها و کاربردهای AI باید مستندسازی، پایش، ممیزی و به‌صورت دوره‌ای بازنگری شوند تا اثربخشی، امنیت و انطباق آن‌ها بهبود یابد.")
+            };
+            dbContext.AiPolicyItems.AddRange(policyItems.Select((p, idx) => new AiPolicyItem
+            {
+                DisplayOrder = idx + 1,
+                Title = p.Title,
+                Text = p.Text,
+                IsActive = true,
+                CreatedDate = DateTime.UtcNow
+            }));
+            dbContext.SaveChanges();
+            Console.WriteLine($"Seeded {policyItems.Length} AI policy items.");
+        }
+
         // Idempotent permission sync: add any missing permission codes (handles schema evolution
         // on databases created before the RBAC redesign, where old lowercase codes existed).
         var rbacPermissions = new (string Name, string Code, string Module, string Description)[]

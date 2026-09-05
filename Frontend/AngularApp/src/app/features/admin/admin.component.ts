@@ -45,6 +45,7 @@ export class CompactJoinPipe implements PipeTransform {
         <button [class.active]="activeTab === 'org'" (click)="activeTab = 'org'; loadOrgData()"><span class="tab-ico">🏢</span>واحدها و سمت‌ها</button>
         <button [class.active]="activeTab === 'roles'" (click)="activeTab = 'roles'; loadRoles()"><span class="tab-ico">🔑</span>نقش‌ها</button>
         <button [class.active]="activeTab === 'announcements'" (click)="activeTab = 'announcements'"><span class="tab-ico">📣</span>اطلاعیه‌ها</button>
+        <button [class.active]="activeTab === 'aipolicy'" (click)="activeTab = 'aipolicy'; loadAiPolicy()"><span class="tab-ico">📜</span>خط‌مشی AI</button>
       </div>
 
       <!-- Analytics Section -->
@@ -402,6 +403,42 @@ export class CompactJoinPipe implements PipeTransform {
               <td class="actions">
                 <button class="btn-delete" (click)="deleteAnnouncement(ann.id)">حذف</button>
               </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- AI Policy Section -->
+      <div class="crud-section" *ngIf="activeTab === 'aipolicy'">
+        <div class="crud-header">
+          <h3>📜 مدیریت خط‌مشی هوش مصنوعی</h3>
+          <div style="display:flex; gap:10px;">
+            <button class="btn-edit" (click)="addPolicyItem()">+ مورد جدید</button>
+            <button class="btn-primary" (click)="saveAiPolicy()" [disabled]="savingPolicy">{{ savingPolicy ? 'در حال ذخیره...' : 'ذخیره خط‌مشی' }}</button>
+          </div>
+        </div>
+        <p class="policy-hint">محتوای این بخش در صفحه «خط‌مشی هوش مصنوعی» سایت نمایش داده می‌شود. ترتیب را با دکمه‌های بالا/پایین تغییر دهید.</p>
+        <table class="crud-table">
+          <thead>
+            <tr><th style="width:60px;">ترتیب</th><th>عنوان</th><th>متن</th><th style="width:150px;">عملیات</th></tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of policyItems; let i = index">
+              <td>
+                <div class="policy-order">
+                  <button class="btn-edit" (click)="movePolicyItem(i, -1)" [disabled]="i === 0">▲</button>
+                  <span>{{ i + 1 }}</span>
+                  <button class="btn-edit" (click)="movePolicyItem(i, 1)" [disabled]="i === policyItems.length - 1">▼</button>
+                </div>
+              </td>
+              <td><input type="text" class="policy-input policy-title-input" [(ngModel)]="item.title" placeholder="عنوان"></td>
+              <td><textarea class="policy-input" [(ngModel)]="item.text" rows="2" placeholder="متن مورد..."></textarea></td>
+              <td class="actions">
+                <button class="btn-delete" (click)="removePolicyItem(i)">حذف</button>
+              </td>
+            </tr>
+            <tr *ngIf="policyItems.length === 0">
+              <td colspan="4" style="text-align:center;color:var(--theme-text-muted)">موردی وجود ندارد — با «+ مورد جدید» شروع کنید</td>
             </tr>
           </tbody>
         </table>
@@ -1140,6 +1177,25 @@ export class CompactJoinPipe implements PipeTransform {
 
     .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
 
+    .policy-hint { color: var(--theme-text-secondary); font-size: 0.85rem; margin: 0 0 14px 0; }
+    .policy-order { display: flex; align-items: center; gap: 6px; justify-content: center; }
+    .policy-order span { font-weight: 700; min-width: 20px; text-align: center; }
+    .policy-order .btn-edit { padding: 4px 8px; font-size: 0.75rem; }
+    .policy-input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1.5px solid var(--theme-border);
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-family: inherit;
+      background: var(--theme-surface);
+      color: var(--theme-text);
+      box-sizing: border-box;
+      resize: vertical;
+    }
+    .policy-input:focus { outline: none; border-color: var(--theme-primary); }
+    .policy-title-input { font-weight: 700; min-width: 140px; }
+
     .user-search-input {
       padding: 10px 14px;
       border: 1.5px solid var(--theme-border);
@@ -1435,6 +1491,9 @@ export class AdminComponent implements OnInit {
   userPageNumbers: number[] = [];
   userSearch = '';
 
+  policyItems: any[] = [];
+  savingPolicy = false;
+
   constructor(private http: HttpClient) {}
 
   ngOnInit(): void {
@@ -1448,6 +1507,51 @@ export class AdminComponent implements OnInit {
 
   loadAnalytics(): void {
     this.http.get<any>(`${this.apiUrl}/admin/analytics`).subscribe({ next: (data) => this.analytics = data });
+  }
+
+  loadAiPolicy(): void {
+    this.http.get<any[]>(`${this.apiUrl}/aipolicy`).subscribe({
+      next: (items) => this.policyItems = (items || []).map(i => ({ title: i.title, text: i.text })),
+      error: (err) => console.error('Failed to load AI policy:', err)
+    });
+  }
+
+  addPolicyItem(): void {
+    this.policyItems.push({ title: '', text: '' });
+  }
+
+  removePolicyItem(index: number): void {
+    if (!confirm('این مورد حذف شود؟')) return;
+    this.policyItems.splice(index, 1);
+  }
+
+  movePolicyItem(index: number, direction: number): void {
+    const target = index + direction;
+    if (target < 0 || target >= this.policyItems.length) return;
+    const item = this.policyItems[index];
+    this.policyItems[index] = this.policyItems[target];
+    this.policyItems[target] = item;
+  }
+
+  saveAiPolicy(): void {
+    const valid = this.policyItems.filter(i => (i.title || '').trim() !== '');
+    if (valid.length === 0) {
+      alert('حداقل یک مورد با عنوان معتبر الزامی است');
+      return;
+    }
+    this.savingPolicy = true;
+    const payload = { items: valid.map((i, idx) => ({ displayOrder: idx + 1, title: i.title.trim(), text: (i.text || '').trim() })) };
+    this.http.put(`${this.apiUrl}/aipolicy`, payload).subscribe({
+      next: () => {
+        this.savingPolicy = false;
+        alert('خط‌مشی با موفقیت ذخیره شد');
+        this.loadAiPolicy();
+      },
+      error: (err) => {
+        this.savingPolicy = false;
+        alert('خطا در ذخیره خط‌مشی: ' + (err.error?.message || err.message));
+      }
+    });
   }
 
   loadFeedbackStats(): void {

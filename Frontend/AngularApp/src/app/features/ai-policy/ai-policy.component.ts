@@ -1,5 +1,36 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
+
+interface PolicyItem {
+  id?: number;
+  displayOrder: number;
+  title: string;
+  text: string;
+}
+
+// Fallback content used only if the API is unreachable
+const DEFAULT_POLICY: PolicyItem[] = [
+  { displayOrder: 1, title: 'حاکمیت', text: 'کلیه کاربردهای هوش مصنوعی باید تحت چارچوب حاکمیت، مسئولیت‌پذیری و نظارت مدیریت ارشد و کمیته حاکمیت AI انجام شود.' },
+  { displayOrder: 2, title: 'هم‌راستایی کسب‌وکار', text: 'استفاده از AI باید در راستای اهداف استراتژیک، افزایش بهره‌وری، کیفیت، نوآوری و تحول دیجیتال شرکت باشد.' },
+  { displayOrder: 3, title: 'اخلاق', text: 'استفاده از هوش مصنوعی باید منصفانه، شفاف، مسئولانه و بدون تبعیض و سوءاستفاده انجام شود.' },
+  { displayOrder: 4, title: 'نظارت انسانی و پاسخگویی', text: 'استفاده از هوش مصنوعی در تمامی واحدها و فرایندهای سازمانی باید با نظارت انسانی متناسب با سطح ریسک انجام شود و مسئولیت بررسی، اعتبارسنجی و تصمیم‌گیری نهایی بر عهده فرد یا واحد مسئول باشد.' },
+  { displayOrder: 5, title: 'امنیت', text: 'سامانه‌ها و خدمات AI باید مطابق الزامات امنیت سایبری، مدیریت دسترسی، ثبت رویداد و حفاظت در برابر تهدیدات و سوءاستفاده‌ها به‌کار گرفته شوند.' },
+  { displayOrder: 6, title: 'محرمانگی', text: 'اطلاعات محرمانه، فنی، قراردادی، مالی، پروژه‌ای و اطلاعات کارفرمایان نباید بدون مجوز در ابزارهای عمومی هوش مصنوعی وارد یا پردازش شوند.' },
+  { displayOrder: 7, title: 'حریم خصوصی', text: 'جمع‌آوری و پردازش اطلاعات کارکنان و سایر داده‌های شخصی باید با رعایت الزامات قانونی و اصول حفاظت از حریم خصوصی انجام شود.' },
+  { displayOrder: 8, title: 'صحت و قابلیت اعتماد', text: 'خروجی‌های AI باید متناسب با سطح ریسک، از نظر صحت، اعتبار، سوگیری و قابلیت اتکا بررسی و اعتبارسنجی شوند.' },
+  { displayOrder: 9, title: 'مدیریت ریسک', text: 'کلیه کاربردهای AI باید قبل و بعد از استقرار، از نظر ریسک‌های فنی، عملیاتی، امنیتی، حقوقی و اخلاقی ارزیابی و پایش شوند.' },
+  { displayOrder: 10, title: 'مالکیت فکری و قراردادها', text: 'استفاده از AI باید با رعایت حقوق مالکیت فکری، حقوق کارفرمایان، الزامات قراردادها و محدودیت‌های مربوط به داده و محتوا انجام شود.' },
+  { displayOrder: 11, title: 'فرهنگ و آموزش', text: 'شرکت متعهد به توسعه فرهنگ استفاده مسئولانه از AI و آموزش مستمر مدیران و کارکنان برای بهره‌برداری ایمن و مؤثر از آن است.' },
+  { displayOrder: 12, title: 'بهبود مستمر', text: 'کلیه سامانه‌ها و کاربردهای AI باید مستندسازی، پایش، ممیزی و به‌صورت دوره‌ای بازنگری شوند تا اثربخشی، امنیت و انطباق آن‌ها بهبود یابد.' }
+];
+
+const PERSIAN_DIGITS = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+
+function toPersianNumber(n: number): string {
+  return String(n).split('').map(ch => ch >= '0' && ch <= '9' ? PERSIAN_DIGITS[+ch] : ch).join('');
+}
 
 @Component({
   selector: 'app-ai-policy',
@@ -15,106 +46,21 @@ import { CommonModule } from '@angular/common';
         </div>
 
         <div class="policy-content">
-          <div class="policy-item">
-            <div class="item-number">۱</div>
+          <div class="policy-item" *ngFor="let item of policyItems; let i = index">
+            <div class="item-number">{{ toPersianNumber(i + 1) }}</div>
             <div class="item-content">
-              <h3>حاکمیت</h3>
-              <p>کلیه کاربردهای هوش مصنوعی باید تحت چارچوب حاکمیت، مسئولیت‌پذیری و نظارت مدیریت ارشد و کمیته حاکمیت AI انجام شود.</p>
+              <h3>{{ item.title }}</h3>
+              <p>{{ item.text }}</p>
             </div>
           </div>
-
-          <div class="policy-item">
-            <div class="item-number">۲</div>
-            <div class="item-content">
-              <h3>هم‌راستایی کسب‌وکار</h3>
-              <p>استفاده از AI باید در راستای اهداف استراتژیک، افزایش بهره‌وری، کیفیت، نوآوری و تحول دیجیتال شرکت باشد.</p>
-            </div>
-          </div>
-
-          <div class="policy-item">
-            <div class="item-number">۳</div>
-            <div class="item-content">
-              <h3>اخلاق</h3>
-              <p>استفاده از هوش مصنوعی باید منصفانه، شفاف، مسئولانه و بدون تبعیض و سوءاستفاده انجام شود.</p>
-            </div>
-          </div>
-
-          <div class="policy-item">
-            <div class="item-number">۴</div>
-            <div class="item-content">
-              <h3>نظارت انسانی و پاسخگویی</h3>
-              <p>استفاده از هوش مصنوعی در <strong>تمامی واحدها و فرایندهای سازمانی</strong> باید با نظارت انسانی متناسب با سطح ریسک انجام شود و مسئولیت بررسی، اعتبارسنجی و تصمیم‌گیری نهایی بر عهده فرد یا واحد مسئول باشد.</p>
-            </div>
-          </div>
-
-          <div class="policy-item">
-            <div class="item-number">۵</div>
-            <div class="item-content">
-              <h3>امنیت</h3>
-              <p>سامانه‌ها و خدمات AI باید مطابق الزامات امنیت سایبری، مدیریت دسترسی، ثبت رویداد و حفاظت در برابر تهدیدات و سوءاستفاده‌ها به‌کار گرفته شوند.</p>
-            </div>
-          </div>
-
-          <div class="policy-item">
-            <div class="item-number">۶</div>
-            <div class="item-content">
-              <h3>محرمانگی</h3>
-              <p>اطلاعات محرمانه، فنی، قراردادی، مالی، پروژه‌ای و اطلاعات کارفرمایان نباید بدون مجوز در ابزارهای عمومی هوش مصنوعی وارد یا پردازش شوند.</p>
-            </div>
-          </div>
-
-          <div class="policy-item">
-            <div class="item-number">۷</div>
-            <div class="item-content">
-              <h3>حریم خصوصی</h3>
-              <p>جمع‌آوری و پردازش اطلاعات کارکنان و سایر داده‌های شخصی باید با رعایت الزامات قانونی و اصول حفاظت از حریم خصوصی انجام شود.</p>
-            </div>
-          </div>
-
-          <div class="policy-item">
-            <div class="item-number">۸</div>
-            <div class="item-content">
-              <h3>صحت و قابلیت اعتماد</h3>
-              <p>خروجی‌های AI باید متناسب با سطح ریسک، از نظر صحت، اعتبار، سوگیری و قابلیت اتکا بررسی و اعتبارسنجی شوند.</p>
-            </div>
-          </div>
-
-          <div class="policy-item">
-            <div class="item-number">۹</div>
-            <div class="item-content">
-              <h3>مدیریت ریسک</h3>
-              <p>کلیه کاربردهای AI باید قبل و بعد از استقرار، از نظر ریسک‌های فنی، عملیاتی، امنیتی، حقوقی و اخلاقی ارزیابی و پایش شوند.</p>
-            </div>
-          </div>
-
-          <div class="policy-item">
-            <div class="item-number">۱۰</div>
-            <div class="item-content">
-              <h3>مالکیت فکری و قراردادها</h3>
-              <p>استفاده از AI باید با رعایت حقوق مالکیت فکری، حقوق کارفرمایان، الزامات قراردادها و محدودیت‌های مربوط به داده و محتوا انجام شود.</p>
-            </div>
-          </div>
-
-          <div class="policy-item">
-            <div class="item-number">۱۱</div>
-            <div class="item-content">
-              <h3>فرهنگ و آموزش</h3>
-              <p>شرکت متعهد به توسعه فرهنگ استفاده مسئولانه از AI و آموزش مستمر مدیران و کارکنان برای بهره‌برداری ایمن و مؤثر از آن است.</p>
-            </div>
-          </div>
-
-          <div class="policy-item">
-            <div class="item-number">۱۲</div>
-            <div class="item-content">
-              <h3>بهبود مستمر</h3>
-              <p>کلیه سامانه‌ها و کاربردهای AI باید مستندسازی، پایش، ممیزی و به‌صورت دوره‌ای بازنگری شوند تا اثربخشی، امنیت و انطباق آن‌ها بهبود یابد.</p>
-            </div>
+          <div class="policy-empty" *ngIf="!policyItems.length">
+            <p>محتوای خط‌مشی در حال بروزرسانی است.</p>
           </div>
         </div>
       </div>
     </div>
   `,
-  styles: [`
+  styles: `
     .ai-policy-page {
       min-height: calc(100vh - 100px);
       padding: 20px 0;
@@ -320,6 +266,26 @@ import { CommonModule } from '@angular/common';
         font-size: 0.9rem;
       }
     }
-  `]
+  `
 })
-export class AiPolicyComponent {}
+export class AiPolicyComponent implements OnInit {
+  policyItems: PolicyItem[] = [];
+
+  constructor(private http: HttpClient) {}
+
+  ngOnInit(): void {
+    this.http.get<PolicyItem[]>(`${environment.apiUrl}/aipolicy`).subscribe({
+      next: (items) => {
+        this.policyItems = (items && items.length) ? items : DEFAULT_POLICY;
+      },
+      error: () => {
+        // API unreachable — show the built-in fallback content
+        this.policyItems = DEFAULT_POLICY;
+      }
+    });
+  }
+
+  toPersianNumber(n: number): string {
+    return toPersianNumber(n);
+  }
+}

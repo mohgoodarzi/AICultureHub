@@ -45,8 +45,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<Glossary> Glossary => Set<Glossary>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
-    public DbSet<Department> Departments => Set<Department>();
-    public DbSet<Position> Positions => Set<Position>();
+public DbSet<Department> Departments => Set<Department>();
+public DbSet<Position> Positions => Set<Position>();
+public DbSet<AiPolicyItem> AiPolicyItems => Set<AiPolicyItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
