@@ -32,7 +32,6 @@ export interface ActiveNotification {
               <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5S10.5 3.17 10.5 4v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
             </svg>
           </div>
-          <span class="np-badge">اطلاعیه</span>
         </div>
 
         <h2 class="np-title" *ngIf="notification">{{ notification.title }}</h2>
@@ -154,16 +153,6 @@ export interface ActiveNotification {
       0%, 100% { transform: translateY(0) scale(1); box-shadow: 0 10px 24px color-mix(in srgb, var(--theme-primary) 45%, transparent), inset 0 2px 4px rgba(255,255,255,0.5); }
       50% { transform: translateY(-4px) scale(1.05); box-shadow: 0 16px 32px color-mix(in srgb, var(--theme-primary) 55%, transparent), inset 0 2px 4px rgba(255,255,255,0.5); }
     }
-    .np-badge {
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 0.72rem;
-      font-weight: 800;
-      letter-spacing: 0.04em;
-      color: var(--theme-primary-dark);
-      background: color-mix(in srgb, var(--theme-primary) 12%, #fff);
-      border: 1px solid color-mix(in srgb, var(--theme-primary) 25%, transparent);
-    }
 
     .np-title {
       margin: 0 0 10px 0;
@@ -216,8 +205,8 @@ export interface ActiveNotification {
     .np-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 28px color-mix(in srgb, var(--theme-primary) 55%, transparent), inset 0 1px 2px rgba(255,255,255,0.4); }
     .np-btn:active { transform: translateY(0); }
 
-    [data-priority="High"] .np-badge { color: #b45309; background: #fef3c7; border-color: #fcd34d; }
-    [data-priority="Critical"] .np-badge { color: #b91c1c; background: #fee2e2; border-color: #fca5a5; }
+    
+    
 
     @media (max-width: 540px) {
       .np-card { padding: 26px 20px 20px 20px; border-radius: 18px; }
