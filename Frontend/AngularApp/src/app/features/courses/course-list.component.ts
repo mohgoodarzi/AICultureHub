@@ -26,7 +26,7 @@ import { CourseListDto } from '../../core/models/course.model';
 
       <div class="courses-grid">
         <div *ngFor="let course of courses" class="course-card-wrapper">
-          <a [routerLink]="['/courses', course.slug]" class="course-card animate-pop">
+          <a [routerLink]="['/courses', course.slug]" class="course-card animate-pop" [attr.target]="course.externalLinkUrl ? '_blank' : null" [href]="course.externalLinkUrl || null">
           <div class="course-thumb" [class.featured-thumb]="course.isFeatured">
             <div class="thumb-pattern"></div>
             <span *ngIf="!course.thumbnailUrl" class="thumb-emoji">📚</span>
@@ -118,6 +118,7 @@ import { CourseListDto } from '../../core/models/course.model';
 
     .course-thumb {
       height: 160px;
+      background: var(--theme-surface-hover);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -137,7 +138,14 @@ import { CourseListDto } from '../../core/models/course.model';
     }
     .thumb-emoji { font-size: 3.2rem; position: relative; filter: drop-shadow(0 6px 14px rgba(0,0,0,0.2)); transition: transform 0.35s var(--ease-spring); }
     .course-card:hover .thumb-emoji { transform: scale(1.18) rotate(-6deg); }
-    .course-thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; }
+    .course-thumb img {
+      max-width: 100%;
+      max-height: 100%;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      transition: transform 0.5s ease;
+    }
     .course-card:hover .course-thumb img { transform: scale(1.07); }
 
     .featured-badge {
