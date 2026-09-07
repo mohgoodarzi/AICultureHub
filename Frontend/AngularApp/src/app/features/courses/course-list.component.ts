@@ -30,7 +30,10 @@ import { CourseListDto } from '../../core/models/course.model';
           <a *ngIf="course.externalLinkUrl" [href]="course.externalLinkUrl" target="_blank" rel="noopener noreferrer" class="course-card animate-pop external-course-card">
           <div class="course-thumb" [class.featured-thumb]="course.isFeatured">
             <div class="thumb-pattern"></div>
-            <video *ngIf="course.videoUrl" class="thumb-video" [src]="course.videoUrl" controls preload="metadata" (click)="$event.stopPropagation()"></video>
+            <a *ngIf="course.videoUrl" [routerLink]="['/courses/watch', course.id]" class="thumb-video-link" title="پخش ویدیو در صفحه اختصاصی">
+              <video class="thumb-video" [src]="course.videoUrl" preload="metadata" muted></video>
+              <span class="watch-overlay"><span class="watch-play">▶</span> پخش در صفحه بزرگ</span>
+            </a>
             <span *ngIf="!course.thumbnailUrl && !course.videoUrl" class="thumb-emoji">📚</span>
             <img *ngIf="course.thumbnailUrl && !course.videoUrl" [src]="course.thumbnailUrl" [alt]="course.title">
             <span class="featured-badge" *ngIf="course.isFeatured">⭐ ویژه</span>
@@ -54,7 +57,10 @@ import { CourseListDto } from '../../core/models/course.model';
         <a *ngIf="!course.externalLinkUrl" [routerLink]="['/courses', course.slug]" class="course-card animate-pop">
           <div class="course-thumb" [class.featured-thumb]="course.isFeatured">
             <div class="thumb-pattern"></div>
-            <video *ngIf="course.videoUrl" class="thumb-video" [src]="course.videoUrl" controls preload="metadata" (click)="$event.stopPropagation()"></video>
+            <a *ngIf="course.videoUrl" [routerLink]="['/courses/watch', course.id]" class="thumb-video-link" title="پخش ویدیو در صفحه اختصاصی">
+              <video class="thumb-video" [src]="course.videoUrl" preload="metadata" muted></video>
+              <span class="watch-overlay"><span class="watch-play">▶</span> پخش در صفحه بزرگ</span>
+            </a>
             <span *ngIf="!course.thumbnailUrl && !course.videoUrl" class="thumb-emoji">📚</span>
             <img *ngIf="course.thumbnailUrl && !course.videoUrl" [src]="course.thumbnailUrl" [alt]="course.title">
             <span class="featured-badge" *ngIf="course.isFeatured">⭐ ویژه</span>
@@ -165,6 +171,43 @@ import { CourseListDto } from '../../core/models/course.model';
     }
     .thumb-emoji { font-size: 3.2rem; position: relative; filter: drop-shadow(0 6px 14px rgba(0,0,0,0.2)); transition: transform 0.35s var(--ease-spring); }
     .course-card:hover .thumb-emoji { transform: scale(1.18) rotate(-6deg); }
+    .thumb-video-link {
+      position: relative;
+      display: block;
+      width: 100%;
+      height: 100%;
+      text-decoration: none;
+    }
+    .watch-overlay {
+      position: absolute;
+      bottom: 8px;
+      left: 0;
+      right: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: linear-gradient(transparent, rgba(10, 8, 30, 0.75));
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 18px 8px 8px 8px;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+    .watch-play {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: var(--theme-primary);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+    }
+    .thumb-video-link:hover .watch-overlay { opacity: 1; }
     .thumb-video {
       width: 100%;
       height: 160px;
@@ -195,7 +238,44 @@ import { CourseListDto } from '../../core/models/course.model';
       object-fit: contain;
       transition: transform 0.5s ease;
     }
-    .course-card:hover .thumb-video {
+    .course-card:hover .thumb-video-link {
+      position: relative;
+      display: block;
+      width: 100%;
+      height: 100%;
+      text-decoration: none;
+    }
+    .watch-overlay {
+      position: absolute;
+      bottom: 8px;
+      left: 0;
+      right: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: linear-gradient(transparent, rgba(10, 8, 30, 0.75));
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 18px 8px 8px 8px;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+    .watch-play {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: var(--theme-primary);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+    }
+    .thumb-video-link:hover .watch-overlay { opacity: 1; }
+    .thumb-video {
       width: 100%;
       height: 160px;
       object-fit: contain;
