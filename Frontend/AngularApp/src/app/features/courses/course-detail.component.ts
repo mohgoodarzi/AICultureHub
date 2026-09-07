@@ -1,5 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
+import { ShamsiDate } from '../../core/utils/shamsi-date';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { CourseService } from '../../core/services/course.service';
 import { CourseDto } from '../../core/models/course.model';
@@ -7,7 +11,7 @@ import { CourseDto } from '../../core/models/course.model';
 @Component({
   selector: 'app-course-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink],
   template: `
     <div class="course-detail" *ngIf="course">
       <a routerLink="/courses" class="back-link">→ بازگشت به دوره‌ها</a>
@@ -77,6 +81,33 @@ import { CourseDto } from '../../core/models/course.model';
           </div>
         </div>
         <div class="vote-message" [class.error]="voteMessage.includes('لطفاً') || voteMessage.includes('خطا')" *ngIf="voteMessage">{{ voteMessage }}</div>
+      </div>
+
+      <!-- Feedback / Comments -->
+      <div class="feedback-section">
+        <h3 class="feedback-title">💬 بازخورد و نظرات</h3>
+        <div class="feedback-form">
+          <textarea [(ngModel)]="newFeedback" rows="3" placeholder="نظر یا بازخورد خود درباره این دوره را بنویسید..." maxlength="2000"></textarea>
+          <div class="feedback-form-actions">
+            <span class="feedback-hint">{{ newFeedback.length }}/2000</span>
+            <button class="feedback-submit" (click)="submitFeedback()" [disabled]="submittingFeedback || !newFeedback || newFeedback.trim().length < 3">
+              {{ submittingFeedback ? 'در حال ارسال...' : 'ارسال بازخورد' }}
+            </button>
+          </div>
+        </div>
+        <div class="feedback-list" *ngIf="feedbacks.length > 0">
+          <div class="feedback-item" *ngFor="let fb of feedbacks">
+            <div class="feedback-head">
+              <span class="feedback-avatar">{{ (fb.userName || '؟')?.charAt(0) }}</span>
+              <div class="feedback-meta">
+                <span class="feedback-user">{{ fb.userName }}</span>
+                <span class="feedback-date">{{ toShamsi(fb.createdDate) }}</span>
+              </div>
+            </div>
+            <p class="feedback-text">{{ fb.commentText }}</p>
+          </div>
+        </div>
+        <p class="feedback-empty" *ngIf="feedbacks.length === 0">هنوز بازخوردی ثبت نشده است — اولین نفر باشید!</p>
       </div>
     </div>
   `,
@@ -193,6 +224,36 @@ import { CourseDto } from '../../core/models/course.model';
     .satisfaction-track { width: 200px; height: 8px; background: #e8ecf0; border-radius: 4px; overflow: hidden; }
     .satisfaction-fill { height: 100%; background: linear-gradient(90deg, var(--theme-primary), var(--theme-secondary)); border-radius: 4px; transition: width 0.4s ease; }
     .vote-summary { font-size: 0.82rem; color: var(--theme-text-muted); }
+    .feedback-section { margin-top: 36px; padding-top: 28px; border-top: 2px solid #e8ecf0; }
+    .feedback-title { font-size: 1.05rem; font-weight: 800; color: var(--theme-text); margin: 0 0 16px 0; }
+    .feedback-form textarea {
+      width: 100%; padding: 12px 14px; border: 1.5px solid var(--theme-border); border-radius: 12px;
+      font-family: inherit; font-size: 0.92rem; resize: vertical; box-sizing: border-box;
+      background: var(--theme-surface); color: var(--theme-text); min-height: 84px;
+    }
+    .feedback-form textarea:focus { outline: none; border-color: var(--theme-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-primary) 12%, transparent); }
+    .feedback-form-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+    .feedback-hint { font-size: 0.75rem; color: var(--theme-text-muted); }
+    .feedback-submit {
+      padding: 10px 24px; border: none; border-radius: 10px;
+      background: linear-gradient(135deg, var(--theme-primary), var(--theme-primary-dark));
+      color: #fff; font-family: inherit; font-weight: 800; font-size: 0.88rem; cursor: pointer; transition: all 0.2s ease;
+    }
+    .feedback-submit:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 20px color-mix(in srgb, var(--theme-primary) 40%, transparent); }
+    .feedback-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+    .feedback-list { margin-top: 24px; display: flex; flex-direction: column; gap: 14px; }
+    .feedback-item { background: var(--theme-surface-hover); border: 1px solid var(--theme-border); border-radius: 14px; padding: 14px 16px; }
+    .feedback-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .feedback-avatar {
+      width: 38px; height: 38px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary));
+      color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.95rem;
+    }
+    .feedback-meta { display: flex; flex-direction: column; }
+    .feedback-user { font-weight: 800; font-size: 0.85rem; color: var(--theme-text); }
+    .feedback-date { font-size: 0.72rem; color: var(--theme-text-muted); }
+    .feedback-text { margin: 0; font-size: 0.9rem; line-height: 1.9; color: var(--theme-text-secondary); text-align: justify; white-space: pre-line; }
+    .feedback-empty { text-align: center; color: var(--theme-text-muted); font-size: 0.85rem; padding: 16px; }
 
     .lessons-section h2 { margin-bottom: 18px; }
 
@@ -254,6 +315,9 @@ import { CourseDto } from '../../core/models/course.model';
 })
 export class CourseDetailComponent implements OnInit {
   course: CourseDto | null = null;
+  feedbacks: any[] = [];
+  newFeedback = '';
+  submittingFeedback = false;
   likeCount = 0;
   dislikeCount = 0;
   userVote: boolean | null = null;
@@ -262,13 +326,40 @@ export class CourseDetailComponent implements OnInit {
   get totalVotes(): number { return this.likeCount + this.dislikeCount; }
   get satisfactionPercentage(): number { return this.totalVotes > 0 ? Math.round((this.likeCount / this.totalVotes) * 100) : 0; }
 
-  constructor(private route: ActivatedRoute, private courseService: CourseService) {}
+  constructor(private route: ActivatedRoute, private courseService: CourseService, private http: HttpClient) {}
+
+  loadFeedbacks(courseId: number): void {
+    this.http.get<any[]>(`${environment.apiUrl}/feedbacks/course/${courseId}`).subscribe({
+      next: (list) => this.feedbacks = list || [],
+      error: () => this.feedbacks = []
+    });
+  }
+
+  submitFeedback(): void {
+    if (!this.course || !this.newFeedback || this.newFeedback.trim().length < 3) return;
+    this.submittingFeedback = true;
+    this.http.post(`${environment.apiUrl}/feedbacks`, { courseId: this.course.id, commentText: this.newFeedback.trim() }).subscribe({
+      next: () => {
+        this.submittingFeedback = false;
+        this.newFeedback = '';
+        this.loadFeedbacks(this.course!.id);
+      },
+      error: (err) => {
+        this.submittingFeedback = false;
+        alert(err.error?.message || 'خطا در ثبت بازخورد');
+      }
+    });
+  }
+
+  toShamsi(date: string): string {
+    return ShamsiDate.format(date, 'date');
+  }
 
   ngOnInit(): void {
     const slug = this.route.snapshot.paramMap.get('slug');
     if (slug) {
       this.courseService.getCourse(slug).subscribe({
-        next: (data) => { this.course = data; this.loadVoteStatus(data.id); }
+        next: (data) => { this.course = data; this.loadVoteStatus(data.id); this.loadFeedbacks(data.id); }
       });
     }
   }

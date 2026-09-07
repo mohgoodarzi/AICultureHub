@@ -48,6 +48,7 @@ public class ApplicationDbContext : DbContext
 public DbSet<Department> Departments => Set<Department>();
 public DbSet<Position> Positions => Set<Position>();
 public DbSet<AiPolicyItem> AiPolicyItems => Set<AiPolicyItem>();
+public DbSet<Feedback> Feedbacks => Set<Feedback>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

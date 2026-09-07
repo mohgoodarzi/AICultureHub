@@ -40,6 +40,7 @@ export class CompactJoinPipe implements PipeTransform {
         <button [class.active]="activeTab === 'articles'" (click)="activeTab = 'articles'; loadArticles()"><span class="tab-ico">📝</span>مقالات</button>
         <button [class.active]="activeTab === 'feedback'" (click)="activeTab = 'feedback'; loadFeedbackStats()"><span class="tab-ico">💬</span>بازخورد مقالات</button>
         <button [class.active]="activeTab === 'coursefeedback'" (click)="activeTab = 'coursefeedback'; loadCourseFeedbackStats()"><span class="tab-ico">🎓</span>بازخورد دوره‌ها</button>
+        <button [class.active]="activeTab === 'usercomments'" (click)="activeTab = 'usercomments'; loadAllFeedbacks()"><span class="tab-ico">📝</span>نظرات کاربران</button>
         <button [class.active]="activeTab === 'categories'" (click)="activeTab = 'categories'; loadAllCategories()"><span class="tab-ico">🗂</span>دسته‌بندی‌ها</button>
         <button [class.active]="activeTab === 'courses'" (click)="activeTab = 'courses'; loadCourses()"><span class="tab-ico">🎓</span>دوره‌ها</button>
         <button [class.active]="activeTab === 'quizzes'" (click)="activeTab = 'quizzes'; loadAdminQuizzes()"><span class="tab-ico">🧪</span>آزمون‌ها</button>
@@ -635,6 +636,44 @@ export class CompactJoinPipe implements PipeTransform {
                 <button class="btn-edit" (click)="editAnnouncement(ann)">ویرایش</button>
                 <button class="btn-delete" (click)="deleteAnnouncement(ann.id)">حذف</button>
               </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- User Comments Section -->
+      <div class="crud-section" *ngIf="activeTab === 'usercomments'">
+        <div class="crud-header">
+          <h3>📝 نظرات و بازخورد کاربران</h3>
+          <button class="btn-primary" (click)="loadAllFeedbacks()">🔄 بروزرسانی</button>
+        </div>
+
+        <table class="crud-table">
+          <thead>
+            <tr>
+              <th>کاربر</th>
+              <th>بخش</th>
+              <th>عنوان</th>
+              <th>متن نظر</th>
+              <th>تاریخ</th>
+              <th>عملیات</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let fb of allFeedbacks">
+              <td>{{ fb.userName }}</td>
+              <td>
+                <span class="status-badge" [class.published]="fb.articleId">{{ fb.articleId ? 'مقاله' : 'دوره' }}</span>
+              </td>
+              <td>{{ fb.articleTitle || fb.courseTitle || '-' }}</td>
+              <td style="max-width: 320px;">{{ fb.commentText }}</td>
+              <td>{{ formatDate(fb.createdDate) }}</td>
+              <td class="actions">
+                <button class="btn-delete" (click)="removeFeedback(fb.id)">حذف</button>
+              </td>
+            </tr>
+            <tr *ngIf="allFeedbacks.length === 0">
+              <td colspan="6" style="text-align:center;color:var(--theme-text-muted)">هیچ نظری ثبت نشده است</td>
             </tr>
           </tbody>
         </table>
@@ -1861,6 +1900,7 @@ export class AdminComponent implements OnInit {
   totalVotes = 0;
   overallSatisfaction = 0;
 
+  allFeedbacks: any[] = [];
   courseFeedbackStats: any[] = [];
   courseTotalLikes = 0;
   courseTotalDislikes = 0;
@@ -2006,6 +2046,20 @@ export class AdminComponent implements OnInit {
         this.courseOverallSatisfaction = this.courseTotalVotes > 0 ? Math.round((this.courseTotalLikes / this.courseTotalVotes) * 100) : 0;
       },
       error: (err) => console.error('Failed to load course feedback stats:', err)
+    });
+  }
+  loadAllFeedbacks(): void {
+    this.http.get<any[]>(`${this.apiUrl}/feedbacks/admin/all`).subscribe({
+      next: (data) => this.allFeedbacks = data || [],
+      error: (err) => console.error('Failed to load feedbacks:', err)
+    });
+  }
+
+  removeFeedback(id: number): void {
+    if (!confirm('این نظر حذف شود؟')) return;
+    this.http.delete(`${this.apiUrl}/feedbacks/admin/${id}`).subscribe({
+      next: () => this.loadAllFeedbacks(),
+      error: (err) => alert('خطا در حذف نظر: ' + (err.error?.message || err.message))
     });
   }
 
