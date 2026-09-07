@@ -36,6 +36,30 @@ import { ShamsiDate } from '../../core/utils/shamsi-date';
             <p>{{ course.description }}</p>
           </div>
 
+          <!-- Like / Dislike -->
+          <div class="vote-section">
+            <div class="vote-container">
+              <button class="vote-btn like-btn" [class.active]="userVote === true" (click)="vote(true)" title="مفید بود">
+                <span class="vote-emoji">👍</span>
+                <span class="vote-label">مفید بود</span>
+                <span class="vote-count">{{ likeCount }}</span>
+              </button>
+              <button class="vote-btn dislike-btn" [class.active]="userVote === false" (click)="vote(false)" title="مفید نبود">
+                <span class="vote-emoji">👎</span>
+                <span class="vote-label">مفید نبود</span>
+                <span class="vote-count">{{ dislikeCount }}</span>
+              </button>
+              <div class="satisfaction-bar" *ngIf="totalVotes > 0">
+                <div class="satisfaction-label">رضایت: <strong>{{ satisfactionPercentage }}%</strong></div>
+                <div class="satisfaction-track">
+                  <div class="satisfaction-fill" [style.width.%]="satisfactionPercentage"></div>
+                </div>
+                <div class="vote-summary">👍 {{ likeCount }} | 👎 {{ dislikeCount }} | مجموع: {{ totalVotes }}</div>
+              </div>
+            </div>
+            <div class="vote-message" [class.error]="voteMessage.includes('لطفاً') || voteMessage.includes('خطا')" *ngIf="voteMessage">{{ voteMessage }}</div>
+          </div>
+
           <!-- Feedback / Comments -->
           <div class="feedback-section">
             <h3 class="feedback-title">💬 بازخورد و نظرات شما درباره این ویدیو</h3>
@@ -202,7 +226,35 @@ import { ShamsiDate } from '../../core/utils/shamsi-date';
     }
     .side-cta:hover { transform: translateY(-2px); }
 
-        .feedback-section {
+        .vote-section {
+      margin-top: 26px;
+      padding: 18px 22px;
+      background: var(--theme-surface);
+      border: 1px solid var(--theme-border);
+      border-radius: 14px;
+      box-shadow: var(--theme-card-shadow);
+    }
+    .vote-container { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+    .vote-btn {
+      display: flex; align-items: center; gap: 8px;
+      padding: 11px 20px; border: 2px solid var(--theme-border);
+      border-radius: 12px; background: var(--theme-surface);
+      cursor: pointer; transition: all 0.2s ease; font-size: 0.92rem; color: var(--theme-text-secondary); font-family: inherit;
+    }
+    .vote-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .vote-count { font-weight: 800; font-size: 1rem; }
+    .like-btn:hover, .like-btn.active { background: #fef2f2; border-color: #ef4444; color: #ef4444; }
+    .dislike-btn:hover, .dislike-btn.active { background: #fef9e7; border-color: #f59e0b; color: #f59e0b; }
+    .vote-message { margin-top: 12px; font-size: 0.88rem; color: #10b981; padding: 8px 16px; border-radius: 8px; background: rgba(16,185,129,0.1); }
+    .vote-message.error { color: #ef4444; background: rgba(239,68,68,0.1); }
+    .satisfaction-bar { display: flex; flex-direction: column; gap: 6px; margin-right: 16px; }
+    .satisfaction-label { font-size: 0.9rem; color: var(--theme-text-secondary); }
+    .satisfaction-label strong { color: var(--theme-primary); font-size: 1rem; }
+    .satisfaction-track { width: 190px; height: 8px; background: #e8ecf0; border-radius: 4px; overflow: hidden; }
+    .satisfaction-fill { height: 100%; background: linear-gradient(90deg, var(--theme-primary), var(--theme-secondary)); border-radius: 4px; transition: width 0.4s ease; }
+    .vote-summary { font-size: 0.78rem; color: var(--theme-text-muted); }
+
+    .feedback-section {
       margin-top: 26px;
       background: var(--theme-surface);
       border: 1px solid var(--theme-border);
@@ -276,6 +328,10 @@ export class CourseVideoWatchComponent implements OnInit {
   feedbacks: any[] = [];
   newFeedback = '';
   submittingFeedback = false;
+  likeCount = 0;
+  dislikeCount = 0;
+  userVote: boolean | null = null;
+  voteMessage = '';
 
   constructor(
     private route: ActivatedRoute,
@@ -294,6 +350,7 @@ export class CourseVideoWatchComponent implements OnInit {
         this.course = course;
         this.loading = false;
         this.loadFeedbacks(course.id);
+        this.loadVoteStatus(course.id);
       },
       error: () => {
         this.error = 'خطا در بارگذاری ویدیو';
@@ -301,6 +358,38 @@ export class CourseVideoWatchComponent implements OnInit {
       }
     });
   }
+
+  // ===== Like / Dislike (same semantics as Articles) =====
+
+  loadVoteStatus(courseId: number): void {
+    this.http.get<any>(`${environment.apiUrl}/courses/${courseId}/vote-status`).subscribe({
+      next: (result) => {
+        this.likeCount = result.likeCount;
+        this.dislikeCount = result.dislikeCount;
+        this.userVote = result.userVote ?? null;
+      }
+    });
+  }
+
+  vote(isLike: boolean): void {
+    if (!this.course) return;
+    this.http.post<any>(`${environment.apiUrl}/courses/${this.course.id}/vote`, { isLike }).subscribe({
+      next: (result) => {
+        this.likeCount = result.likeCount;
+        this.dislikeCount = result.dislikeCount;
+        this.userVote = result.userVote ?? null;
+        this.voteMessage = result.userVote === null ? 'رأی شما حذف شد ✓' : (result.userVote ? 'ممنون از پسندیدن شما! ✓' : 'رأی شما ثبت شد ✓');
+        setTimeout(() => this.voteMessage = '', 3000);
+      },
+      error: (err) => {
+        this.voteMessage = err.status === 401 ? 'برای رأی دادن لطفاً وارد شوید' : 'خطا: وضعیت ' + err.status;
+        setTimeout(() => this.voteMessage = '', 4000);
+      }
+    });
+  }
+
+  get totalVotes(): number { return this.likeCount + this.dislikeCount; }
+  get satisfactionPercentage(): number { return this.totalVotes > 0 ? Math.round((this.likeCount / this.totalVotes) * 100) : 0; }
 
   loadFeedbacks(courseId: number): void {
     this.http.get<any[]>(`${environment.apiUrl}/feedbacks/course/${courseId}`).subscribe({
