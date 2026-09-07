@@ -26,15 +26,15 @@ export const routes: Routes = [
     canActivate: [AuthGuard]
   },
   {
+    path: 'courses/watch/:id',
+    loadComponent: () => import('./features/courses/course-video-watch.component').then(m => m.CourseVideoWatchComponent),
+    canActivate: [AuthGuard]
+  },  {
     path: 'courses/:slug',
     loadComponent: () => import('./features/courses/course-detail.component').then(m => m.CourseDetailComponent),
     canActivate: [AuthGuard]
   },
-  {
-    path: 'courses/watch/:id',
-    loadComponent: () => import('./features/courses/course-video-watch.component').then(m => m.CourseVideoWatchComponent),
-    canActivate: [AuthGuard]
-  },
+
   {
     path: 'quizzes',
     loadComponent: () => import('./features/quizzes/quiz-list.component').then(m => m.QuizListComponent),
