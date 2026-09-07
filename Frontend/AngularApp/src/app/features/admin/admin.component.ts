@@ -175,6 +175,33 @@ export class CompactJoinPipe implements PipeTransform {
             </tr>
           </tbody>
         </table>
+
+        <h3 style="margin: 26px 0 12px 0; font-size: 1rem; font-weight: 800; color: var(--theme-text);">📝 نظرات متنی کاربران درباره دوره‌ها</h3>
+        <table class="crud-table">
+          <thead>
+            <tr>
+              <th>کاربر</th>
+              <th>دوره</th>
+              <th>متن نظر</th>
+              <th>تاریخ</th>
+              <th>عملیات</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let fb of courseTextFeedbacks">
+              <td>{{ fb.userName }}</td>
+              <td>{{ fb.courseTitle || \x27-\x27 }}</td>
+              <td style="max-width: 340px;">{{ fb.commentText }}</td>
+              <td>{{ formatDate(fb.createdDate) }}</td>
+              <td class="actions">
+                <button class="btn-delete" (click)="removeFeedback(fb.id)">حذف</button>
+              </td>
+            </tr>
+            <tr *ngIf="courseTextFeedbacks.length === 0">
+              <td colspan="5" style="text-align:center;color:var(--theme-text-muted)">هیچ نظر متنی ثبت نشده است</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       <!-- Categories Section -->
@@ -1957,6 +1984,7 @@ export class AdminComponent implements OnInit {
   overallSatisfaction = 0;
 
   allFeedbacks: any[] = [];
+  courseTextFeedbacks: any[] = [];
   courseFeedbackStats: any[] = [];
   courseTotalLikes = 0;
   courseTotalDislikes = 0;
@@ -2103,7 +2131,14 @@ export class AdminComponent implements OnInit {
       },
       error: (err) => console.error('Failed to load course feedback stats:', err)
     });
-  }
+      // Text comments for courses (from the unified Feedbacks table)
+    this.http.get<any[]>(`${this.apiUrl}/feedbacks/admin/all`).subscribe({
+      next: (data) => {
+        this.courseTextFeedbacks = (data || []).filter(f => f.courseId);
+      },
+      error: (err) => console.error('Failed to load course comments:', err)
+    });
+}
   loadAllFeedbacks(): void {
     this.http.get<any[]>(`${this.apiUrl}/feedbacks/admin/all`).subscribe({
       next: (data) => this.allFeedbacks = data || [],

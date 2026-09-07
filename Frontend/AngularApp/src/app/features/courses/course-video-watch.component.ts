@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
@@ -8,7 +9,7 @@ import { ShamsiDate } from '../../core/utils/shamsi-date';
 @Component({
   selector: 'app-course-video-watch',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, FormsModule],
   template: `
     <div class="watch-page">
       <a routerLink="/courses" class="back-link">← بازگشت به دوره‌ها</a>
@@ -33,6 +34,33 @@ import { ShamsiDate } from '../../core/utils/shamsi-date';
           <div class="watch-description" *ngIf="course.description && !course.videoDescription">
             <h4>درباره این دوره</h4>
             <p>{{ course.description }}</p>
+          </div>
+
+          <!-- Feedback / Comments -->
+          <div class="feedback-section">
+            <h3 class="feedback-title">💬 بازخورد و نظرات شما درباره این ویدیو</h3>
+            <div class="feedback-form">
+              <textarea [(ngModel)]="newFeedback" rows="3" placeholder="نظر یا بازخورد خود درباره این ویدیو را بنویسید..." maxlength="2000"></textarea>
+              <div class="feedback-form-actions">
+                <span class="feedback-hint">{{ newFeedback.length }}/2000</span>
+                <button class="feedback-submit" (click)="submitFeedback()" [disabled]="submittingFeedback || !newFeedback || newFeedback.trim().length < 3">
+                  {{ submittingFeedback ? 'در حال ارسال...' : 'ارسال بازخورد' }}
+                </button>
+              </div>
+            </div>
+            <div class="feedback-list" *ngIf="feedbacks.length > 0">
+              <div class="feedback-item" *ngFor="let fb of feedbacks">
+                <div class="feedback-head">
+                  <span class="feedback-avatar">{{ (fb.userName || '؟')?.charAt(0) }}</span>
+                  <div class="feedback-meta">
+                    <span class="feedback-user">{{ fb.userName }}</span>
+                    <span class="feedback-date">{{ toShamsi(fb.createdDate) }}</span>
+                  </div>
+                </div>
+                <p class="feedback-text">{{ fb.commentText }}</p>
+              </div>
+            </div>
+            <p class="feedback-empty" *ngIf="feedbacks.length === 0">هنوز بازخوردی ثبت نشده است — اولین نفر باشید!</p>
           </div>
         </div>
 
@@ -174,6 +202,59 @@ import { ShamsiDate } from '../../core/utils/shamsi-date';
     }
     .side-cta:hover { transform: translateY(-2px); }
 
+        .feedback-section {
+      margin-top: 26px;
+      background: var(--theme-surface);
+      border: 1px solid var(--theme-border);
+      border-radius: 14px;
+      padding: 20px 22px;
+      box-shadow: var(--theme-card-shadow);
+    }
+    .feedback-title { margin: 0 0 16px 0; font-size: 1rem; font-weight: 800; color: var(--theme-text); }
+    .feedback-form textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid var(--theme-border);
+      border-radius: 12px;
+      font-family: inherit;
+      font-size: 0.92rem;
+      resize: vertical;
+      box-sizing: border-box;
+      background: var(--theme-surface);
+      color: var(--theme-text);
+      min-height: 84px;
+    }
+    .feedback-form textarea:focus { outline: none; border-color: var(--theme-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-primary) 12%, transparent); }
+    .feedback-form-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+    .feedback-hint { font-size: 0.75rem; color: var(--theme-text-muted); }
+    .feedback-submit {
+      padding: 10px 24px;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--theme-primary), var(--theme-primary-dark));
+      color: #fff;
+      font-family: inherit;
+      font-weight: 800;
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .feedback-submit:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 20px color-mix(in srgb, var(--theme-primary) 40%, transparent); }
+    .feedback-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+    .feedback-list { margin-top: 20px; display: flex; flex-direction: column; gap: 12px; }
+    .feedback-item { background: var(--theme-surface-hover); border: 1px solid var(--theme-border); border-radius: 12px; padding: 12px 16px; }
+    .feedback-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+    .feedback-avatar {
+      width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary));
+      color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem;
+    }
+    .feedback-meta { display: flex; flex-direction: column; }
+    .feedback-user { font-weight: 800; font-size: 0.82rem; color: var(--theme-text); }
+    .feedback-date { font-size: 0.7rem; color: var(--theme-text-muted); }
+    .feedback-text { margin: 0; font-size: 0.88rem; line-height: 1.9; color: var(--theme-text-secondary); text-align: justify; white-space: pre-line; }
+    .feedback-empty { text-align: center; color: var(--theme-text-muted); font-size: 0.85rem; padding: 12px; }
+
     .watch-loading, .watch-error {
       text-align: center;
       padding: 60px 20px;
@@ -192,6 +273,9 @@ export class CourseVideoWatchComponent implements OnInit {
   course: any = null;
   loading = true;
   error = '';
+  feedbacks: any[] = [];
+  newFeedback = '';
+  submittingFeedback = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -209,12 +293,40 @@ export class CourseVideoWatchComponent implements OnInit {
       next: (course) => {
         this.course = course;
         this.loading = false;
+        this.loadFeedbacks(course.id);
       },
       error: () => {
         this.error = 'خطا در بارگذاری ویدیو';
         this.loading = false;
       }
     });
+  }
+
+  loadFeedbacks(courseId: number): void {
+    this.http.get<any[]>(`${environment.apiUrl}/feedbacks/course/${courseId}`).subscribe({
+      next: (list) => this.feedbacks = list || [],
+      error: () => this.feedbacks = []
+    });
+  }
+
+  submitFeedback(): void {
+    if (!this.course || !this.newFeedback || this.newFeedback.trim().length < 3) return;
+    this.submittingFeedback = true;
+    this.http.post(`${environment.apiUrl}/feedbacks`, { courseId: this.course.id, commentText: this.newFeedback.trim() }).subscribe({
+      next: () => {
+        this.submittingFeedback = false;
+        this.newFeedback = '';
+        this.loadFeedbacks(this.course.id);
+      },
+      error: (err) => {
+        this.submittingFeedback = false;
+        alert(err.error?.message || 'خطا در ثبت بازخورد');
+      }
+    });
+  }
+
+  toShamsi(date: string): string {
+    return ShamsiDate.format(date, 'date');
   }
 
   get difficultyLabel(): string {
@@ -226,7 +338,5 @@ export class CourseVideoWatchComponent implements OnInit {
     return labels[this.course?.difficulty || ''] || this.course?.difficulty || '';
   }
 
-  toShamsi(date: string): string {
-    return ShamsiDate.format(date, 'date');
-  }
+
 }
