@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { CourseService } from '../../core/services/course.service';
 import { CourseListDto } from '../../core/models/course.model';
 
@@ -30,10 +30,10 @@ import { CourseListDto } from '../../core/models/course.model';
           <a *ngIf="course.externalLinkUrl" [href]="course.externalLinkUrl" target="_blank" rel="noopener noreferrer" class="course-card animate-pop external-course-card">
           <div class="course-thumb" [class.featured-thumb]="course.isFeatured">
             <div class="thumb-pattern"></div>
-            <a *ngIf="course.videoUrl" [routerLink]="['/courses/watch', course.id]" class="thumb-video-link" title="پخش ویدیو در صفحه اختصاصی">
+            <span class="thumb-video-link" title="پخش ویدیو در صفحه اختصاصی" (click)="openWatchPage(course.id, $event)">
               <video class="thumb-video" [src]="course.videoUrl" preload="metadata" muted></video>
               <span class="watch-overlay"><span class="watch-play">▶</span> پخش در صفحه بزرگ</span>
-            </a>
+            </span>
             <span *ngIf="!course.thumbnailUrl && !course.videoUrl" class="thumb-emoji">📚</span>
             <img *ngIf="course.thumbnailUrl && !course.videoUrl" [src]="course.thumbnailUrl" [alt]="course.title">
             <span class="featured-badge" *ngIf="course.isFeatured">⭐ ویژه</span>
@@ -57,10 +57,10 @@ import { CourseListDto } from '../../core/models/course.model';
         <a *ngIf="!course.externalLinkUrl" [routerLink]="['/courses', course.slug]" class="course-card animate-pop">
           <div class="course-thumb" [class.featured-thumb]="course.isFeatured">
             <div class="thumb-pattern"></div>
-            <a *ngIf="course.videoUrl" [routerLink]="['/courses/watch', course.id]" class="thumb-video-link" title="پخش ویدیو در صفحه اختصاصی">
+            <span class="thumb-video-link" title="پخش ویدیو در صفحه اختصاصی" (click)="openWatchPage(course.id, $event)">
               <video class="thumb-video" [src]="course.videoUrl" preload="metadata" muted></video>
               <span class="watch-overlay"><span class="watch-play">▶</span> پخش در صفحه بزرگ</span>
-            </a>
+            </span>
             <span *ngIf="!course.thumbnailUrl && !course.videoUrl" class="thumb-emoji">📚</span>
             <img *ngIf="course.thumbnailUrl && !course.videoUrl" [src]="course.thumbnailUrl" [alt]="course.title">
             <span class="featured-badge" *ngIf="course.isFeatured">⭐ ویژه</span>
@@ -174,6 +174,7 @@ import { CourseListDto } from '../../core/models/course.model';
     .thumb-video-link {
       position: relative;
       display: block;
+      cursor: pointer;
       width: 100%;
       height: 100%;
       text-decoration: none;
@@ -241,6 +242,7 @@ import { CourseListDto } from '../../core/models/course.model';
     .course-card:hover .thumb-video-link {
       position: relative;
       display: block;
+      cursor: pointer;
       width: 100%;
       height: 100%;
       text-decoration: none;
@@ -391,7 +393,7 @@ export class CourseListComponent implements OnInit {
   totalPages = 0;
   userVotes: { [courseId: number]: boolean | null } = {};
 
-  constructor(private courseService: CourseService) {}
+  constructor(private courseService: CourseService, private router: Router) {}
 
   ngOnInit(): void { this.loadCourses(); }
 
@@ -412,6 +414,12 @@ export class CourseListComponent implements OnInit {
         next: (result) => { this.userVotes[course.id] = result.userVote; course.likeCount = result.likeCount; course.dislikeCount = result.dislikeCount; }
       });
     });
+  }
+
+  openWatchPage(courseId: number, event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.router.navigate(['/courses/watch', courseId]);
   }
 
   vote(event: Event, courseId: number, isLike: boolean): void {
