@@ -42,10 +42,16 @@ public class QuizzesController : ControllerBase
     {
         var userId = GetCurrentUserId();
         if (userId == null) return Unauthorized();
-        
-        var result = await _quizService.SubmitQuizAsync(id, request, userId.Value);
-        if (result == null) return NotFound();
-        return Ok(result);
+        try
+        {
+            var result = await _quizService.SubmitQuizAsync(id, request, userId.Value);
+            if (result == null) return NotFound();
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [Authorize]
@@ -57,6 +63,16 @@ public class QuizzesController : ControllerBase
 
         var history = await _quizService.GetUserQuizHistoryAsync(userId.Value);
         return Ok(history);
+    }
+
+    [Authorize]
+    [HttpGet("{id}/attempt-status")]
+    public async Task<IActionResult> GetAttemptStatus(int id)
+    {
+        var userId = GetCurrentUserId();
+        if (userId == null) return Unauthorized();
+        var attempted = await _quizService.HasUserAttemptedAsync(id, userId.Value);
+        return Ok(new { attempted });
     }
 
     // ===== Admin quiz management =====

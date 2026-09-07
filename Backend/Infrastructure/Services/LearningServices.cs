@@ -274,6 +274,11 @@ public class QuizService : IQuizService
     {
         var quiz = await _context.Quizzes.Include(q => q.Questions.Where(qn => qn.IsActive)).ThenInclude(qn => qn.Answers).FirstOrDefaultAsync(q => q.Id == quizId);
         if (quiz == null) return null;
+
+        // Finalization guard: an exam can be submitted exactly once - finalized attempts are locked
+        var alreadyAttempted = await _context.QuizAttempts.AnyAsync(qa => qa.QuizId == quizId && qa.UserId == userId);
+        if (alreadyAttempted)
+            throw new InvalidOperationException("این آزمون قبلاً نهایی و ثبت شده است و امکان تغییر یا ارسال مجدد آن وجود ندارد");
         var attempt = new QuizAttempt { UserId = userId, QuizId = quizId, TimeSpentSeconds = request.TimeSpentSeconds, TotalQuestions = quiz.Questions.Count, AttemptDate = DateTime.UtcNow };
         int score = 0, maxScore = quiz.Questions.Sum(q => q.Points), correctAnswers = 0;
         foreach (var question in quiz.Questions)
@@ -303,6 +308,11 @@ public class QuizService : IQuizService
             .Select(qa => new QuizAttemptResultDto { AttemptId = qa.Id, Score = qa.Score, MaxScore = qa.MaxScore, Percentage = qa.Percentage, CorrectAnswers = qa.CorrectAnswers, TotalQuestions = qa.TotalQuestions, IsPassed = qa.IsPassed, TimeSpentSeconds = qa.TimeSpentSeconds, PointsEarned = qa.PointsEarned, AttemptDate = qa.AttemptDate, QuestionResults = new List<QuestionResultDto>() })
             .ToListAsync();
                 }
+
+    public async Task<bool> HasUserAttemptedAsync(int quizId, int userId)
+    {
+        return await _context.QuizAttempts.AnyAsync(qa => qa.QuizId == quizId && qa.UserId == userId);
+    }
 
     // ===== Admin quiz management =====
 

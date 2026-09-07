@@ -25,6 +25,10 @@ export class QuizService {
     return this.http.post<QuizAttemptResultDto>(`${this.API_URL}/${id}/submit`, request);
   }
 
+  getAttemptStatus(id: number): Observable<{ attempted: boolean }> {
+    return this.http.get<{ attempted: boolean }>(`${this.API_URL}/${id}/attempt-status`);
+  }
+
   getHistory(): Observable<QuizAttemptResultDto[]> {
     return this.http.get<QuizAttemptResultDto[]>(`${this.API_URL}/history`);
   }

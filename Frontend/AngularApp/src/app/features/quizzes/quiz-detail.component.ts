@@ -31,16 +31,34 @@ import { QuizDto, QuizAttemptResultDto, SubmitQuizRequest, QuestionDto } from '.
             <button *ngFor="let answer of question.answers"
                     class="answer-btn"
                     [class.selected]="selectedAnswers[question.id] === answer.id"
-                    (click)="selectAnswer(question.id, answer.id)">
+                    (click)="selectAnswer(question.id, answer.id)" [disabled]="attemptLocked">
               <span class="answer-check"></span>
               {{ answer.answerText }}
             </button>
           </div>
         </div>
       </div>
-      <button class="btn-submit" (click)="submitQuiz()" [disabled]="!allAnswered()">
-        {{ allAnswered() ? '✓ ثبت نهایی پاسخ‌ها' : 'به همه سوالات پاسخ دهید' }}
+<button class="btn-submit" (click)="requestFinalize()" [disabled]="!allAnswered() || attemptLocked">
+        {{ attemptLocked ? '🔒 این آزمون نهایی شده است' : (allAnswered() ? 'ثبت نهایی آزمون' : 'به همه سوالات پاسخ دهید') }}
       </button>
+
+      <div class="locked-banner" *ngIf="attemptLocked && !result">
+        🔒 این آزمون قبلاً نهایی و ثبت شده است. پاسخ‌ها قفل شده و امکان تغییر یا ارسال مجدد وجود ندارد.
+      </div>
+    </div>
+
+    <!-- Final confirmation dialog -->
+    <div class="confirm-overlay" *ngIf="showConfirmDialog">
+      <div class="confirm-box">
+        <div class="confirm-icon">❓</div>
+        <h3>ثبت نهایی آزمون</h3>
+        <p>آیا مطمئن هستید که می‌خواهید آزمون را نهایی و ارسال کنید؟</p>
+        <p class="confirm-hint">پس از نهایی شدن، پاسخ‌ها قفل می‌شوند و امکان تغییر آن‌ها وجود نخواهد داشت.</p>
+        <div class="confirm-actions">
+          <button class="btn-confirm-yes" (click)="confirmFinalize()">✓ بله، آزمون را نهایی کن</button>
+          <button class="btn-confirm-no" (click)="cancelFinalize()">✗ خیر، بازگشت به آزمون</button>
+        </div>
+      </div>
     </div>
     <div class="quiz-result" *ngIf="result">
       <h1 class="result-title animate-fade-up">{{ result.isPassed ? '🎉 آفرین!' : '💡 تلاش دوباره' }}</h1>
@@ -212,6 +230,67 @@ import { QuizDto, QuizAttemptResultDto, SubmitQuizRequest, QuestionDto } from '.
       box-shadow: inset 0 0 0 3.5px var(--theme-surface);
     }
 
+        .confirm-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 5000;
+      background: rgba(10, 8, 30, 0.6);
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      animation: fadeIn 0.25s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .confirm-box {
+      width: 100%;
+      max-width: 440px;
+      background: linear-gradient(160deg, #ffffff 0%, #f6f4fe 100%);
+      border-radius: 20px;
+      padding: 32px 28px;
+      text-align: center;
+      box-shadow: 0 30px 70px rgba(15, 10, 60, 0.35), inset 0 1px 0 rgba(255,255,255,0.9);
+      animation: popIn 0.35s cubic-bezier(0.22, 1.2, 0.36, 1);
+    }
+    @keyframes popIn { from { opacity: 0; transform: scale(0.85) translateY(30px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+    .confirm-icon {
+      width: 60px; height: 60px;
+      margin: 0 auto 14px auto;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.6rem;
+      background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary));
+      box-shadow: 0 10px 24px color-mix(in srgb, var(--theme-primary) 40%, transparent);
+    }
+    .confirm-box h3 { margin: 0 0 10px 0; font-size: 1.15rem; font-weight: 800; color: var(--theme-text); }
+    .confirm-box p { margin: 0 0 8px 0; font-size: 0.92rem; color: var(--theme-text-secondary); line-height: 1.8; }
+    .confirm-hint { font-size: 0.78rem !important; color: var(--theme-text-muted) !important; }
+    .confirm-actions { display: flex; gap: 10px; margin-top: 20px; }
+    .confirm-actions button {
+      flex: 1; padding: 12px 10px; border-radius: 12px; border: none;
+      font-family: inherit; font-size: 0.85rem; font-weight: 800; cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-confirm-yes { background: linear-gradient(135deg, var(--theme-primary), var(--theme-primary-dark)); color: #fff; box-shadow: 0 6px 18px color-mix(in srgb, var(--theme-primary) 35%, transparent); }
+    .btn-confirm-yes:hover { transform: translateY(-2px); }
+    .btn-confirm-no { background: var(--theme-surface-hover); color: var(--theme-text-secondary); border: 1.5px solid var(--theme-border) !important; }
+    .btn-confirm-no:hover { border-color: var(--theme-text-muted) !important; }
+
+    .locked-banner {
+      margin-top: 16px;
+      background: rgba(239, 68, 68, 0.08);
+      border: 1.5px solid rgba(239, 68, 68, 0.35);
+      color: #b91c1c;
+      padding: 14px 18px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 0.88rem;
+      line-height: 1.8;
+    }
+    .answer-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
     .btn-submit {
       width: 100%;
       padding: 16px;
@@ -284,16 +363,40 @@ export class QuizDetailComponent implements OnInit {
   result: QuizAttemptResultDto | null = null;
   selectedAnswers: { [questionId: number]: number } = {};
   startTime = 0;
+  showConfirmDialog = false;
+  attemptLocked = false;
 
   constructor(private route: ActivatedRoute, private quizService: QuizService) {}
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
-      this.quizService.getQuiz(parseInt(id)).subscribe({
-        next: (data) => { this.quiz = data; this.startTime = Date.now(); }
+      const quizId = parseInt(id);
+      this.quizService.getQuiz(quizId).subscribe({
+        next: (data) => {
+          this.quiz = data;
+          this.startTime = Date.now();
+          // If this exam was already finalized, open it in locked (read-only) mode
+          this.quizService.getAttemptStatus(quizId).subscribe({
+            next: (status) => { this.attemptLocked = status.attempted; }
+          });
+        }
       });
     }
+  }
+
+  requestFinalize(): void {
+    if (!this.allAnswered()) return;
+    this.showConfirmDialog = true;
+  }
+
+  cancelFinalize(): void {
+    this.showConfirmDialog = false;
+  }
+
+  confirmFinalize(): void {
+    this.showConfirmDialog = false;
+    this.submitQuiz();
   }
 
   selectAnswer(questionId: number, answerId: number): void {
@@ -315,7 +418,15 @@ export class QuizDetailComponent implements OnInit {
       timeSpentSeconds: timeSpent
     };
     this.quizService.submitQuiz(this.quiz.id, request).subscribe({
-      next: (result) => this.result = result
+      next: (result) => { this.result = result; this.attemptLocked = true; },
+      error: (err) => {
+        // Backend rejects resubmission of a finalized exam
+        if (err.status === 400) {
+          this.attemptLocked = true;
+        } else {
+          alert(err.error?.message || 'خطا در ثبت آزمون');
+        }
+      }
     });
   }
 }
