@@ -902,6 +902,37 @@ export class CompactJoinPipe implements PipeTransform {
               <span>در حال آپلود...</span>
             </div>
           </div>
+          <div class="form-group">
+            <label>محتوای دوره</label>
+            <div class="content-type-selector">
+              <label class="ct-option" [class.selected]="courseForm.contentType === 'video'">
+                <input type="radio" name="contentType" value="video" [(ngModel)]="courseForm.contentType" (ngModelChange)="onCourseContentTypeChange()">
+                🎬 ویدیوی کوتاه
+              </label>
+              <label class="ct-option" [class.selected]="courseForm.contentType === 'link'">
+                <input type="radio" name="contentType" value="link" [(ngModel)]="courseForm.contentType" (ngModelChange)="onCourseContentTypeChange()">
+                🔗 لینک دوره خارجی
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group" *ngIf="courseForm.contentType === 'video'">
+            <label>ویدیوی کوتاه (حداکثر {{ uploadLimits.maxVideoSizeMB }} مگابایت)</label>
+            <input type="file" accept="video/*" (change)="onCourseVideoSelected($event)" class="file-input">
+            <div class="image-preview" *ngIf="courseForm.videoUrl">
+              <video [src]="courseForm.videoUrl" controls style="max-width:100%; border-radius:8px;"></video>
+              <button type="button" class="btn-remove" (click)="courseForm.videoUrl = ''">حذف ویدیو</button>
+            </div>
+            <label style="margin-top:12px;">توضیحات ویدیو (نمایش زیر ویدیو)</label>
+            <textarea [(ngModel)]="courseForm.videoDescription" name="videoDescription" rows="2"></textarea>
+          </div>
+
+          <div class="form-group" *ngIf="courseForm.contentType === 'link'">
+            <label>لینک دوره خارجی <span class="required">*</span></label>
+            <input type="url" [(ngModel)]="courseForm.externalLinkUrl" name="externalLinkUrl" placeholder="https://example.com/course" dir="ltr">
+            <small style="color:var(--theme-text-muted)">کاربران با کلیک روی دکمه، به سایت مقصد هدایت می‌شوند</small>
+          </div>
+
           <div class="form-actions">
             <button type="button" class="btn-cancel" (click)="closeCourseModal()">انصراف</button>
             <button type="submit" class="btn-primary">ذخیره</button>
@@ -1615,6 +1646,31 @@ export class CompactJoinPipe implements PipeTransform {
       50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--theme-success) 10%, transparent); }
     }
 
+    .content-type-selector { display: flex; gap: 12px; flex-wrap: wrap; }
+    .ct-option {
+      flex: 1;
+      min-width: 180px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      border: 2px solid var(--theme-border);
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: var(--theme-text-secondary);
+      background: var(--theme-surface);
+      transition: all 0.2s ease;
+    }
+    .ct-option:hover { border-color: var(--theme-primary); }
+    .ct-option.selected {
+      border-color: var(--theme-primary);
+      background: color-mix(in srgb, var(--theme-primary) 8%, var(--theme-surface));
+      color: var(--theme-primary);
+    }
+    .ct-option input[type="radio"] { accent-color: var(--theme-primary); }
+
     .user-search-input {
       padding: 10px 14px;
       border: 1.5px solid var(--theme-border);
@@ -1886,7 +1942,7 @@ export class AdminComponent implements OnInit {
   positions: any[] = [];
 
   articleForm: any = { title: '', summary: '', content: '', categoryId: '', difficulty: 'Beginner', readingTimeMinutes: 5, isPublished: false, imageUrl: '', videoUrl: '' };
-  courseForm: any = { title: '', shortDescription: '', description: '', difficulty: 'Beginner', estimatedDurationMinutes: 60, points: 100, isPublished: false, thumbnailUrl: '' };
+  courseForm: any = { title: '', shortDescription: '', description: '', difficulty: 'Beginner', estimatedDurationMinutes: 60, points: 100, isPublished: false, thumbnailUrl: '', contentType: 'video', videoUrl: '', videoDescription: '', externalLinkUrl: '' };
   announcementForm: any = { title: '', summary: '', content: '', priority: 'Normal', isPublished: true };
   editingAnnouncement: any = null;
   categoryForm: any = { name: '', description: '', displayOrder: 0 };
@@ -2444,13 +2500,17 @@ export class AdminComponent implements OnInit {
 
   openCourseModal(): void {
     this.editingCourse = null;
-    this.courseForm = { title: '', shortDescription: '', description: '', difficulty: 'Beginner', estimatedDurationMinutes: 60, points: 100, isPublished: false };
-    this.showCourseModal = true;
+    this.courseForm = { title: '', shortDescription: '', description: '', difficulty: 'Beginner', estimatedDurationMinutes: 60, points: 100, isPublished: false, thumbnailUrl: '', contentType: 'video', videoUrl: '', videoDescription: '', externalLinkUrl: '' };
   }
 
   editCourse(course: any): void {
     this.editingCourse = course;
     this.courseForm = { ...course };
+    // Derive the mutually-exclusive content type from saved data
+    this.courseForm.contentType = course.videoUrl ? 'video' : (course.externalLinkUrl ? 'link' : 'video');
+    if (!this.courseForm.videoUrl) this.courseForm.videoUrl = '';
+    if (!this.courseForm.videoDescription) this.courseForm.videoDescription = '';
+    if (!this.courseForm.externalLinkUrl) this.courseForm.externalLinkUrl = '';
     this.showCourseModal = true;
   }
 
@@ -2460,6 +2520,21 @@ export class AdminComponent implements OnInit {
   }
 
   saveCourse(): void {
+    // Mutual exclusion: video OR external link, never both
+    if (this.courseForm.contentType === 'video') {
+      this.courseForm.externalLinkUrl = '';
+      if (!this.courseForm.videoUrl) {
+        alert('برای گزینه ویدیو، ابتدا فایل ویدیو را آپلود کنید یا گزینه لینک را انتخاب کنید');
+        return;
+      }
+    } else if (this.courseForm.contentType === 'link') {
+      this.courseForm.videoUrl = '';
+      this.courseForm.videoDescription = '';
+      if (!this.courseForm.externalLinkUrl || !this.courseForm.externalLinkUrl.trim()) {
+        alert('لطفاً لینک دوره خارجی را وارد کنید');
+        return;
+      }
+    }
     if (this.editingCourse) {
       this.http.put<any>(`${this.apiUrl}/courses/${this.editingCourse.id}`, this.courseForm).subscribe({
         next: () => { this.closeCourseModal(); this.loadCourses(); },
@@ -2989,6 +3064,40 @@ export class AdminComponent implements OnInit {
       error: (err) => {
         this.uploading = false;
         alert(err.error?.message || 'خطا در آپلود تصویر');
+      }
+    });
+  }
+
+  onCourseContentTypeChange(): void {
+    // Switching type clears the other option (mutual exclusion)
+    if (this.courseForm.contentType === 'video') {
+      this.courseForm.externalLinkUrl = '';
+    } else {
+      this.courseForm.videoUrl = '';
+      this.courseForm.videoDescription = '';
+    }
+  }
+
+  onCourseVideoSelected(event: any): void {
+    const file = event.target.files[0];
+    if (!file) return;
+    const maxMB = this.uploadLimits.maxVideoSizeMB;
+    if (file.size > maxMB * 1024 * 1024) {
+      alert('حجم ویدیو نباید بیشتر از ' + maxMB + ' مگابایت باشد');
+      event.target.value = '';
+      return;
+    }
+    const formData = new FormData();
+    formData.append('file', file);
+    this.uploading = true;
+    this.http.post<any>(`${this.apiUrl}/upload/video`, formData).subscribe({
+      next: (response) => {
+        this.courseForm.videoUrl = response.url;
+        this.uploading = false;
+      },
+      error: (err) => {
+        this.uploading = false;
+        alert(err.error?.message || 'خطا در آپلود ویدیو');
       }
     });
   }

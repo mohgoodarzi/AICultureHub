@@ -62,6 +62,31 @@ import { CourseDto } from '../../core/models/course.model';
       </div>
 
       <!-- Course feedback / satisfaction survey -->
+      <!-- Course content: video+description OR external link -->
+      <div class="course-media animate-fade-up" *ngIf="course.videoUrl || course.externalLinkUrl">
+        <div class="cm-video" *ngIf="course.videoUrl">
+          <div class="video-frame">
+            <video [src]="course.videoUrl" controls preload="metadata"></video>
+          </div>
+          <div class="cm-description" *ngIf="course.videoDescription">
+            <h4>درباره این ویدیو</h4>
+            <p>{{ course.videoDescription }}</p>
+          </div>
+        </div>
+        <div class="cm-external" *ngIf="course.externalLinkUrl">
+          <div class="cm-external-card">
+            <span class="cm-ext-icon">🔗</span>
+            <div class="cm-ext-text">
+              <h4>این دوره به‌صورت آنلاین در سایت دیگر برگزار می‌شود</h4>
+              <p>برای مشاهده جزئیات و ثبت‌نام، روی دکمه زیر کلیک کنید</p>
+            </div>
+            <a class="cm-ext-btn" [href]="course.externalLinkUrl" target="_blank" rel="noopener">
+              رفتن به صفحه دوره ↗
+            </a>
+          </div>
+        </div>
+      </div>
+
       <div class="vote-section">
         <div class="vote-container">
           <button class="vote-btn like-btn" [class.active]="userVote === true" (click)="vote(true)" title="پسندیدم">
@@ -210,6 +235,51 @@ import { CourseDto } from '../../core/models/course.model';
     .progress-label { font-size: 0.85rem; font-weight: 700; }
 
     .vote-section { margin-top: 40px; padding-top: 28px; border-top: 2px solid #e8ecf0; }
+    /* Course media: video+description or external link */
+    .course-media { margin-top: 34px; }
+    .cm-video .video-frame {
+      border-radius: 16px;
+      overflow: hidden;
+      background: #0f0d1d;
+      box-shadow: var(--shadow-md);
+      border: 1px solid var(--theme-border);
+    }
+    .cm-video video { width: 100%; max-height: 480px; display: block; }
+    .cm-description {
+      margin-top: 16px;
+      background: var(--theme-surface-hover);
+      border: 1px solid var(--theme-border);
+      border-radius: 14px;
+      padding: 16px 20px;
+    }
+    .cm-description h4 { margin: 0 0 8px 0; font-size: 0.95rem; font-weight: 800; color: var(--theme-primary); }
+    .cm-description p { margin: 0; font-size: 0.92rem; line-height: 1.9; color: var(--theme-text-secondary); text-align: justify; white-space: pre-line; }
+    .cm-external-card {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+      background: linear-gradient(135deg, color-mix(in srgb, var(--theme-primary) 8%, var(--theme-surface)), var(--theme-surface));
+      border: 1.5px solid color-mix(in srgb, var(--theme-primary) 30%, var(--theme-border));
+      border-radius: 16px;
+      padding: 20px 24px;
+    }
+    .cm-ext-icon { font-size: 2rem; }
+    .cm-ext-text { flex: 1; min-width: 200px; }
+    .cm-ext-text h4 { margin: 0 0 4px 0; font-size: 0.98rem; font-weight: 800; color: var(--theme-text); }
+    .cm-ext-text p { margin: 0; font-size: 0.85rem; color: var(--theme-text-muted); }
+    .cm-ext-btn {
+      padding: 11px 22px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--theme-primary), var(--theme-primary-dark));
+      color: #fff;
+      font-weight: 800;
+      font-size: 0.9rem;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      box-shadow: 0 6px 18px color-mix(in srgb, var(--theme-primary) 35%, transparent);
+    }
+    .cm-ext-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 24px color-mix(in srgb, var(--theme-primary) 45%, transparent); }
     .vote-container { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
     .vote-btn { display: flex; align-items: center; gap: 8px; padding: 12px 20px; border: 2px solid #e0e0e0; border-radius: 12px; background: #fff; cursor: pointer; transition: all 0.2s ease; font-size: 1rem; color: #666; font-family: inherit; }
     .vote-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }

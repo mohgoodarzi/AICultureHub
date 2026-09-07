@@ -5,6 +5,9 @@ export interface CourseDto {
   description?: string;
   shortDescription?: string;
   thumbnailUrl?: string;
+  videoUrl?: string;
+  videoDescription?: string;
+  externalLinkUrl?: string;
   difficulty?: string;
   estimatedDurationMinutes: number;
   points: number;
@@ -28,6 +31,9 @@ export interface CourseListDto {
   slug: string;
   shortDescription?: string;
   thumbnailUrl?: string;
+  videoUrl?: string;
+  videoDescription?: string;
+  externalLinkUrl?: string;
   difficulty?: string;
   estimatedDurationMinutes: number;
   points: number;
@@ -70,6 +76,9 @@ export interface CreateCourseRequest {
   description?: string;
   shortDescription?: string;
   thumbnailUrl?: string;
+  videoUrl?: string;
+  videoDescription?: string;
+  externalLinkUrl?: string;
   difficulty?: string;
   estimatedDurationMinutes: number;
   categoryId?: number;

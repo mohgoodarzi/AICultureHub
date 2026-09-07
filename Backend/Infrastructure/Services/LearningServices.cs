@@ -69,9 +69,13 @@ public class CourseService : ICourseService
 
     public async Task<CourseDto> CreateCourseAsync(CreateCourseRequest request, int createdBy)
     {
+
+        // Mutual exclusion: a course has EITHER an uploaded video OR an external link - never both
+        if (!string.IsNullOrWhiteSpace(request.VideoUrl) && !string.IsNullOrWhiteSpace(request.ExternalLinkUrl))
+            throw new InvalidOperationException("برای هر دوره فقط یکی از گزینه‌های (ویدیو کوتاه) یا (لینک دوره خارجی) قابل انتخاب است");
         var course = new Course { Title = request.Title, Slug = GenerateSlug(request.Title),
             Description = request.Description, ShortDescription = request.ShortDescription,
-            ThumbnailUrl = request.ThumbnailUrl, Difficulty = request.Difficulty,
+            ThumbnailUrl = request.ThumbnailUrl, VideoUrl = request.VideoUrl, VideoDescription = request.VideoDescription, ExternalLinkUrl = request.ExternalLinkUrl, Difficulty = request.Difficulty,
             EstimatedDurationMinutes = request.EstimatedDurationMinutes, CategoryId = request.CategoryId,
             CreatedBy = createdBy, IsPublished = request.IsPublished, IsActive = true, CreatedDate = DateTime.UtcNow };
         _context.Courses.Add(course);
@@ -84,9 +88,15 @@ public class CourseService : ICourseService
     {
         var course = await _context.Courses.FindAsync(id);
         if (course == null) return null;
+
+        // Mutual exclusion: a course has EITHER an uploaded video OR an external link - never both
+        if (!string.IsNullOrWhiteSpace(request.VideoUrl) && !string.IsNullOrWhiteSpace(request.ExternalLinkUrl))
+            throw new InvalidOperationException("برای هر دوره فقط یکی از گزینه‌های (ویدیو کوتاه) یا (لینک دوره خارجی) قابل انتخاب است");
         course.Title = request.Title; course.Slug = GenerateSlug(request.Title);
         course.Description = request.Description; course.ShortDescription = request.ShortDescription;
         course.ThumbnailUrl = request.ThumbnailUrl; course.Difficulty = request.Difficulty;
+        course.VideoUrl = request.VideoUrl; course.VideoDescription = request.VideoDescription;
+        course.ExternalLinkUrl = request.ExternalLinkUrl;
         course.EstimatedDurationMinutes = request.EstimatedDurationMinutes; course.CategoryId = request.CategoryId;
         course.IsPublished = request.IsPublished; course.ModifiedDate = DateTime.UtcNow; course.ModifiedBy = modifiedBy;
         await _context.SaveChangesAsync();
@@ -154,7 +164,7 @@ public class CourseService : ICourseService
     {
         var enrollment = userId.HasValue ? await _context.CourseEnrollments.FirstOrDefaultAsync(e => e.UserId == userId.Value && e.CourseId == course.Id) : null;
         var lessons = await _context.Lessons.Where(l => l.CourseId == course.Id && l.IsActive).OrderBy(l => l.OrderIndex).Select(l => new LessonDto { Id = l.Id, CourseId = l.CourseId, Title = l.Title, Description = l.Description, Content = l.Content, VideoUrl = l.VideoUrl, OrderIndex = l.OrderIndex, EstimatedDurationMinutes = l.EstimatedDurationMinutes, Points = l.Points, IsCompleted = userId.HasValue && _context.UserProgress.Any(p => p.UserId == userId.Value && p.LessonId == l.Id && p.IsCompleted), ProgressPercentage = userId.HasValue && _context.UserProgress.Any(p => p.UserId == userId.Value && p.LessonId == l.Id && p.IsCompleted) ? 100 : 0 }).ToListAsync();
-        return new CourseDto { Id = course.Id, Title = course.Title, Slug = course.Slug, Description = course.Description, ShortDescription = course.ShortDescription, ThumbnailUrl = course.ThumbnailUrl, Difficulty = course.Difficulty, EstimatedDurationMinutes = course.EstimatedDurationMinutes, Points = course.Points, Category = course.Category != null ? new CategoryDto { Id = course.Category.Id, Name = course.Category.Name, Slug = course.Category.Slug, Color = course.Category.Color } : null!, LessonCount = lessons.Count, EnrolledCount = course.EnrolledCount, CompletionCount = course.CompletionCount, AverageRating = course.AverageRating, IsPublished = course.IsPublished, IsFeatured = course.IsFeatured, CreatedDate = course.CreatedDate, Lessons = lessons, UserEnrollment = enrollment != null ? new EnrollmentDto { Id = enrollment.Id, CourseId = enrollment.CourseId, UserId = enrollment.UserId, EnrolledDate = enrollment.EnrolledDate, CompletedDate = enrollment.CompletedDate, ProgressPercentage = enrollment.ProgressPercentage, Status = enrollment.Status, LastAccessedDate = enrollment.LastAccessedDate } : null };
+        return new CourseDto { Id = course.Id, Title = course.Title, Slug = course.Slug, Description = course.Description, ShortDescription = course.ShortDescription, ThumbnailUrl = course.ThumbnailUrl, VideoUrl = course.VideoUrl, VideoDescription = course.VideoDescription, ExternalLinkUrl = course.ExternalLinkUrl, Difficulty = course.Difficulty, EstimatedDurationMinutes = course.EstimatedDurationMinutes, Points = course.Points, Category = course.Category != null ? new CategoryDto { Id = course.Category.Id, Name = course.Category.Name, Slug = course.Category.Slug, Color = course.Category.Color } : null!, LessonCount = lessons.Count, EnrolledCount = course.EnrolledCount, CompletionCount = course.CompletionCount, AverageRating = course.AverageRating, IsPublished = course.IsPublished, IsFeatured = course.IsFeatured, CreatedDate = course.CreatedDate, Lessons = lessons, UserEnrollment = enrollment != null ? new EnrollmentDto { Id = enrollment.Id, CourseId = enrollment.CourseId, UserId = enrollment.UserId, EnrolledDate = enrollment.EnrolledDate, CompletedDate = enrollment.CompletedDate, ProgressPercentage = enrollment.ProgressPercentage, Status = enrollment.Status, LastAccessedDate = enrollment.LastAccessedDate } : null };
     }
 
     private static string GenerateSlug(string title) => title.ToLowerInvariant().Replace(" ", "-").Replace("'", "").Replace("\"", "") + "-" + DateTime.UtcNow.Ticks.ToString()[10..];

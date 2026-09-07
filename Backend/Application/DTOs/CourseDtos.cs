@@ -8,6 +8,9 @@ public class CourseDto
     public string? Description { get; set; }
     public string? ShortDescription { get; set; }
     public string? ThumbnailUrl { get; set; }
+    public string? VideoUrl { get; set; }
+    public string? VideoDescription { get; set; }
+    public string? ExternalLinkUrl { get; set; }
     public string? Difficulty { get; set; }
     public int EstimatedDurationMinutes { get; set; }
     public int Points { get; set; }
@@ -73,6 +76,9 @@ public class CreateCourseRequest
     public string? Description { get; set; }
     public string? ShortDescription { get; set; }
     public string? ThumbnailUrl { get; set; }
+    public string? VideoUrl { get; set; }
+    public string? VideoDescription { get; set; }
+    public string? ExternalLinkUrl { get; set; }
     public string? Difficulty { get; set; }
     public int EstimatedDurationMinutes { get; set; } = 60;
     public int? CategoryId { get; set; }
