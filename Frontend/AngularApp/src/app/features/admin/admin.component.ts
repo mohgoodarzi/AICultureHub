@@ -118,7 +118,6 @@ export class CompactJoinPipe implements PipeTransform {
       <div class="crud-section" *ngIf="activeTab === 'coursefeedback'">
         <div class="crud-header">
           <h3>🎓 آمار بازخورد دوره‌ها</h3>
-          <button class="btn-primary" (click)="loadCourseFeedbackStats()">🔄 بروزرسانی</button>
         </div>
 
         <div class="stats-grid" style="margin-bottom: 20px;">
