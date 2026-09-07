@@ -2507,13 +2507,28 @@ export class AdminComponent implements OnInit {
 
   editCourse(course: any): void {
     this.editingCourse = course;
-    this.courseForm = { ...course };
-    // Derive the mutually-exclusive content type from saved data
-    this.courseForm.contentType = course.videoUrl ? 'video' : (course.externalLinkUrl ? 'link' : 'video');
-    if (!this.courseForm.videoUrl) this.courseForm.videoUrl = '';
-    if (!this.courseForm.videoDescription) this.courseForm.videoDescription = '';
-    if (!this.courseForm.externalLinkUrl) this.courseForm.externalLinkUrl = '';
-    this.showCourseModal = true;
+    // Fetch the FULL course detail: the admin list payload omits video fields
+    this.http.get<any>(`${this.apiUrl}/courses/by-id/${course.id}`).subscribe({
+      next: (detail) => {
+        this.courseForm = {
+          title: detail.title,
+          shortDescription: detail.shortDescription || '',
+          description: detail.description || '',
+          difficulty: detail.difficulty || 'Beginner',
+          estimatedDurationMinutes: detail.estimatedDurationMinutes || 60,
+          points: detail.points || 100,
+          isPublished: detail.isPublished,
+          thumbnailUrl: detail.thumbnailUrl || '',
+          categoryId: detail.category ? detail.category.id : null,
+          contentType: detail.videoUrl ? 'video' : (detail.externalLinkUrl ? 'link' : 'video'),
+          videoUrl: detail.videoUrl || '',
+          videoDescription: detail.videoDescription || '',
+          externalLinkUrl: detail.externalLinkUrl || ''
+        };
+        this.showCourseModal = true;
+      },
+      error: () => alert('خطا در بارگذاری اطلاعات دوره')
+    });
   }
 
   closeCourseModal(): void {
