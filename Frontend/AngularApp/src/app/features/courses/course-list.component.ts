@@ -30,9 +30,11 @@ import { CourseListDto } from '../../core/models/course.model';
           <a *ngIf="course.externalLinkUrl" [href]="course.externalLinkUrl" target="_blank" rel="noopener noreferrer" class="course-card animate-pop external-course-card">
           <div class="course-thumb" [class.featured-thumb]="course.isFeatured">
             <div class="thumb-pattern"></div>
-            <span *ngIf="!course.thumbnailUrl" class="thumb-emoji">📚</span>
-            <img *ngIf="course.thumbnailUrl" [src]="course.thumbnailUrl" [alt]="course.title">
+            <video *ngIf="course.videoUrl" class="thumb-video" [src]="course.videoUrl" controls preload="metadata" (click)="$event.stopPropagation()"></video>
+            <span *ngIf="!course.thumbnailUrl && !course.videoUrl" class="thumb-emoji">📚</span>
+            <img *ngIf="course.thumbnailUrl && !course.videoUrl" [src]="course.thumbnailUrl" [alt]="course.title">
             <span class="featured-badge" *ngIf="course.isFeatured">⭐ ویژه</span>
+            <span class="video-badge" *ngIf="course.videoUrl">🎬 ویدیو آموزشی</span>
           </div>
           <div class="course-content">
             <div class="course-badges">
@@ -52,9 +54,11 @@ import { CourseListDto } from '../../core/models/course.model';
         <a *ngIf="!course.externalLinkUrl" [routerLink]="['/courses', course.slug]" class="course-card animate-pop">
           <div class="course-thumb" [class.featured-thumb]="course.isFeatured">
             <div class="thumb-pattern"></div>
-            <span *ngIf="!course.thumbnailUrl" class="thumb-emoji">📚</span>
-            <img *ngIf="course.thumbnailUrl" [src]="course.thumbnailUrl" [alt]="course.title">
+            <video *ngIf="course.videoUrl" class="thumb-video" [src]="course.videoUrl" controls preload="metadata" (click)="$event.stopPropagation()"></video>
+            <span *ngIf="!course.thumbnailUrl && !course.videoUrl" class="thumb-emoji">📚</span>
+            <img *ngIf="course.thumbnailUrl && !course.videoUrl" [src]="course.thumbnailUrl" [alt]="course.title">
             <span class="featured-badge" *ngIf="course.isFeatured">⭐ ویژه</span>
+            <span class="video-badge" *ngIf="course.videoUrl">🎬 ویدیو آموزشی</span>
           </div>
           <div class="course-content">
             <div class="course-badges">
@@ -161,6 +165,28 @@ import { CourseListDto } from '../../core/models/course.model';
     }
     .thumb-emoji { font-size: 3.2rem; position: relative; filter: drop-shadow(0 6px 14px rgba(0,0,0,0.2)); transition: transform 0.35s var(--ease-spring); }
     .course-card:hover .thumb-emoji { transform: scale(1.18) rotate(-6deg); }
+    .thumb-video {
+      width: 100%;
+      height: 160px;
+      object-fit: contain;
+      background: #0f0d1d;
+      display: block;
+      position: relative;
+      z-index: 1;
+    }
+    .video-badge {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      z-index: 2;
+      background: rgba(15, 13, 29, 0.75);
+      color: #fff;
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 14px;
+      backdrop-filter: blur(4px);
+    }
     .course-thumb img {
       max-width: 100%;
       max-height: 100%;
@@ -169,7 +195,29 @@ import { CourseListDto } from '../../core/models/course.model';
       object-fit: contain;
       transition: transform 0.5s ease;
     }
-    .course-card:hover .course-thumb img { transform: scale(1.07); }
+    .course-card:hover .thumb-video {
+      width: 100%;
+      height: 160px;
+      object-fit: contain;
+      background: #0f0d1d;
+      display: block;
+      position: relative;
+      z-index: 1;
+    }
+    .video-badge {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      z-index: 2;
+      background: rgba(15, 13, 29, 0.75);
+      color: #fff;
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 14px;
+      backdrop-filter: blur(4px);
+    }
+    .course-thumb img { transform: scale(1.07); }
 
     .featured-badge {
       position: absolute;

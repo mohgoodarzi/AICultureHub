@@ -40,7 +40,7 @@ public class CourseService : ICourseService
             .Select(c => new CourseListDto
             {
                 Id = c.Id, Title = c.Title, Slug = c.Slug,
-                ShortDescription = c.ShortDescription, ThumbnailUrl = c.ThumbnailUrl, ExternalLinkUrl = c.ExternalLinkUrl,
+                ShortDescription = c.ShortDescription, ThumbnailUrl = c.ThumbnailUrl, VideoUrl = c.VideoUrl, VideoDescription = c.VideoDescription, ExternalLinkUrl = c.ExternalLinkUrl, IsPublished = c.IsPublished,
                 Difficulty = c.Difficulty, EstimatedDurationMinutes = c.EstimatedDurationMinutes,
                 Points = c.Points, CategoryName = c.Category != null ? c.Category.Name : "",
                 LessonCount = c.Lessons.Count(l => l.IsActive),
