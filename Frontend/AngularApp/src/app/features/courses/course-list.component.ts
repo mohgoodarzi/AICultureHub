@@ -26,7 +26,30 @@ import { CourseListDto } from '../../core/models/course.model';
 
       <div class="courses-grid">
         <div *ngFor="let course of courses" class="course-card-wrapper">
-          <a [routerLink]="['/courses', course.slug]" class="course-card animate-pop" [attr.target]="course.externalLinkUrl ? '_blank' : null" [href]="course.externalLinkUrl || null">
+          <!-- External-link course: opens the linked site in a NEW tab (no routerLink so Angular doesn't hijack the click) -->
+          <a *ngIf="course.externalLinkUrl" [href]="course.externalLinkUrl" target="_blank" rel="noopener noreferrer" class="course-card animate-pop external-course-card">
+          <div class="course-thumb" [class.featured-thumb]="course.isFeatured">
+            <div class="thumb-pattern"></div>
+            <span *ngIf="!course.thumbnailUrl" class="thumb-emoji">📚</span>
+            <img *ngIf="course.thumbnailUrl" [src]="course.thumbnailUrl" [alt]="course.title">
+            <span class="featured-badge" *ngIf="course.isFeatured">⭐ ویژه</span>
+          </div>
+          <div class="course-content">
+            <div class="course-badges">
+              <span class="difficulty" [attr.data-level]="course.difficulty">{{ getDifficultyLabel(course.difficulty) }}</span>
+            </div>
+            <h3>{{ course.title }}</h3>
+            <p>{{ course.shortDescription }}</p>
+            <div class="course-meta">
+              <span>📃 {{ course.lessonCount }} درس</span>
+              <span>👥 {{ course.enrolledCount }} شرکت‌کننده</span>
+              <span>⚡ {{ course.points }} امتیاز</span>
+            </div>
+            <span class="course-cta">رفتن به دوره ↗</span>
+          </div>
+        </a>
+        <!-- Internal course: normal in-app navigation -->
+        <a *ngIf="!course.externalLinkUrl" [routerLink]="['/courses', course.slug]" class="course-card animate-pop">
           <div class="course-thumb" [class.featured-thumb]="course.isFeatured">
             <div class="thumb-pattern"></div>
             <span *ngIf="!course.thumbnailUrl" class="thumb-emoji">📚</span>
