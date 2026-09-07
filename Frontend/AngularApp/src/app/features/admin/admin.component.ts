@@ -2501,6 +2501,7 @@ export class AdminComponent implements OnInit {
   openCourseModal(): void {
     this.editingCourse = null;
     this.courseForm = { title: '', shortDescription: '', description: '', difficulty: 'Beginner', estimatedDurationMinutes: 60, points: 100, isPublished: false, thumbnailUrl: '', contentType: 'video', videoUrl: '', videoDescription: '', externalLinkUrl: '' };
+    this.showCourseModal = true;
   }
 
   editCourse(course: any): void {
