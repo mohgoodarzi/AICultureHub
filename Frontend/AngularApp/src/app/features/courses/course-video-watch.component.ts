@@ -18,7 +18,7 @@ import { ShamsiDate } from '../../core/utils/shamsi-date';
         <!-- Main player -->
         <div class="player-wrap animate-fade-up">
           <div class="player-frame">
-            <video *ngIf="course.videoUrl" [src]="course.videoUrl" controls autoplay preload="metadata"></video>
+            <video *ngIf="course.videoUrl" [src]="course.videoUrl" controls autoplay muted playsinline preload="metadata"></video>
           </div>
           <h1 class="watch-title">{{ course.title }}</h1>
           <div class="watch-meta">
