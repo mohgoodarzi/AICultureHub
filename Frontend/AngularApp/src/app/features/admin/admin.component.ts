@@ -919,6 +919,7 @@ export class CompactJoinPipe implements PipeTransform {
           <div class="form-group" *ngIf="courseForm.contentType === 'video'">
             <label>ویدیوی کوتاه (حداکثر {{ uploadLimits.maxVideoSizeMB }} مگابایت)</label>
             <input type="file" accept="video/*" (change)="onCourseVideoSelected($event)" class="file-input">
+            <div class="upload-progress" *ngIf="uploading">⏳ در حال آپلود ویدیو... لطفاً تا پایان صبر کنید</div>
             <div class="image-preview" *ngIf="courseForm.videoUrl">
               <video [src]="courseForm.videoUrl" controls style="max-width:100%; border-radius:8px;"></video>
               <button type="button" class="btn-remove" (click)="courseForm.videoUrl = ''">حذف ویدیو</button>
@@ -935,7 +936,7 @@ export class CompactJoinPipe implements PipeTransform {
 
           <div class="form-actions">
             <button type="button" class="btn-cancel" (click)="closeCourseModal()">انصراف</button>
-            <button type="submit" class="btn-primary">ذخیره</button>
+            <button type="submit" class="btn-primary" [disabled]="uploading">ذخیره</button>
           </div>
         </form>
       </div>
