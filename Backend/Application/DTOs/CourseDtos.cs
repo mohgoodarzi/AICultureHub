@@ -33,6 +33,7 @@ public class CourseListDto
     public string Slug { get; set; } = string.Empty;
     public string? ShortDescription { get; set; }
     public string? ThumbnailUrl { get; set; }
+    public string? ExternalLinkUrl { get; set; }
     public string? Difficulty { get; set; }
     public int EstimatedDurationMinutes { get; set; }
     public int Points { get; set; }
