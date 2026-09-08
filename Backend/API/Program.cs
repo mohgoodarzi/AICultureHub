@@ -746,4 +746,12 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+// Serve the production Angular app (built into wwwroot/app) with SPA fallback
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(Path.Combine(app.Environment.ContentRootPath, "wwwroot", "app")),
+    RequestPath = ""
+});
+app.MapFallbackToFile("{*path:nonfile}", "/app/index.html");
+
 app.Run();
