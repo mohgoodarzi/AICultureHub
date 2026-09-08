@@ -1,6 +1,6 @@
 @echo off
 REM Builds the frontend, installs it into the backend, and STARTS the backend if needed.
-REM Site address: http://localhost:5060
+REM Site address: http://localhost:8080
 echo ============================================
 echo   AI Culture Hub - Build and Start
 echo ============================================
@@ -27,8 +27,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "if (-not (Get-Process -N
 
 echo.
 echo ============================================
-echo   DONE!  Site:  http://localhost:5060
+echo   DONE!  Site:  http://localhost:8080
 echo   (if the page looks broken press Ctrl+Shift+R)
 echo ============================================
-start http://localhost:5060
+start http://localhost:8080
 pause
