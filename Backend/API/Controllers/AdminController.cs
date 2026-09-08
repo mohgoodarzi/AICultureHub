@@ -134,6 +134,19 @@ public class AdminController : ControllerBase
         }
     }
 
+    [HttpGet("audit-logs/meta")]
+    public async Task<IActionResult> GetAuditMeta([FromServices] ApplicationDbContext dbContext)
+    {
+        var logs = await dbContext.AuditLogs.Select(l => new { l.Action, l.EntityType, l.Username, l.UserAgent }).ToListAsync();
+        return Ok(new
+        {
+            actions = logs.Select(l => l.Action).Where(a => !string.IsNullOrEmpty(a)).Distinct().OrderBy(a => a).ToList(),
+            entityTypes = logs.Select(l => l.EntityType).Where(e => !string.IsNullOrEmpty(e)).Distinct().OrderBy(e => e).ToList(),
+            usernames = logs.Select(l => l.Username).Where(u => !string.IsNullOrEmpty(u)).Distinct().OrderBy(u => u).ToList(),
+            computers = logs.Select(l => l.UserAgent).Where(c => !string.IsNullOrEmpty(c)).Distinct().OrderBy(c => c).ToList()
+        });
+    }
+
     [HttpGet("audit-logs")]
     public async Task<IActionResult> GetAuditLogs(
         [FromServices] ApplicationDbContext dbContext,
@@ -141,12 +154,25 @@ public class AdminController : ControllerBase
         [FromQuery] int pageSize = 50,
         [FromQuery] string? action = null,
         [FromQuery] string? entityType = null,
-        [FromQuery] string? username = null)
+        [FromQuery] string? username = null,
+        [FromQuery] string? period = "all",
+        [FromQuery] string? computer = null)
     {
         var query = dbContext.AuditLogs.AsQueryable();
-        if (!string.IsNullOrWhiteSpace(action)) query = query.Where(l => l.Action.Contains(action));
-        if (!string.IsNullOrWhiteSpace(entityType)) query = query.Where(l => l.EntityType != null && l.EntityType.Contains(entityType));
-        if (!string.IsNullOrWhiteSpace(username)) query = query.Where(l => l.Username != null && l.Username.Contains(username));
+        var fromDate = period switch
+        {
+            "day" => DateTime.UtcNow.AddDays(-1),
+            "week" => DateTime.UtcNow.AddDays(-7),
+            "month" => DateTime.UtcNow.AddMonths(-1),
+            "quarter" => DateTime.UtcNow.AddMonths(-3),
+            "year" => DateTime.UtcNow.AddYears(-1),
+            _ => (DateTime?)null
+        };
+        if (fromDate.HasValue) query = query.Where(l => l.Timestamp >= fromDate);
+        if (!string.IsNullOrWhiteSpace(action) && action != "all") query = query.Where(l => l.Action == action);
+        if (!string.IsNullOrWhiteSpace(entityType) && entityType != "all") query = query.Where(l => l.EntityType == entityType);
+        if (!string.IsNullOrWhiteSpace(username) && username != "all") query = query.Where(l => l.Username == username);
+        if (!string.IsNullOrWhiteSpace(computer) && computer != "all") query = query.Where(l => l.UserAgent == computer);
         var totalCount = await query.CountAsync();
         var items = await query.OrderByDescending(l => l.Timestamp)
             .Skip((pageNumber - 1) * pageSize).Take(pageSize)
@@ -154,6 +180,7 @@ public class AdminController : ControllerBase
             .ToListAsync();
         return Ok(new { items, totalCount, pageNumber, pageSize });
     }
+
 
     [HttpGet("analytics")]
     public async Task<IActionResult> GetAnalytics()

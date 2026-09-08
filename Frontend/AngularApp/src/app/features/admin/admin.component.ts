@@ -49,7 +49,7 @@ export class CompactJoinPipe implements PipeTransform {
         <button [class.active]="activeTab === 'roles'" (click)="activeTab = 'roles'; loadRoles()"><span class="tab-ico">🔑</span>نقش‌ها</button>
         <button [class.active]="activeTab === 'announcements'" (click)="activeTab = 'announcements'"><span class="tab-ico">📣</span>اطلاعیه‌ها</button>
         <button [class.active]="activeTab === 'aipolicy'" (click)="activeTab = 'aipolicy'; loadAiPolicy()"><span class="tab-ico">📜</span>خط‌مشی AI</button>
-        <button [class.active]="activeTab === 'audit'" (click)="activeTab = 'audit'; loadAuditLogs()"><span class="tab-ico">🧾</span>گزارش تغییرات</button>
+        <button [class.active]="activeTab === 'audit'" (click)="activeTab = 'audit'; loadAuditMeta(); refreshAuditReport()"><span class="tab-ico">🧾</span>گزارش تغییرات</button>
         <button [class.active]="activeTab === 'settings'" (click)="activeTab = 'settings'; loadUploadLimits()"><span class="tab-ico">⚙️</span>تنظیمات</button>
       </div>
 
@@ -740,16 +740,48 @@ export class CompactJoinPipe implements PipeTransform {
         </div>
         <div class="form-row" style="margin-bottom: 14px;">
           <div class="form-group">
+            <label>بازه زمانی</label>
+            <select [(ngModel)]="auditFilters.period" name="auditPeriod">
+              <option value="all">همه بازه‌ها</option>
+              <option value="day">۲۴ ساعت گذشته</option>
+              <option value="week">هفته گذشته</option>
+              <option value="month">ماه گذشته</option>
+              <option value="quarter">سه ماه گذشته</option>
+              <option value="year">سال گذشته</option>
+            </select>
+          </div>
+          <div class="form-group">
             <label>عملیات</label>
-            <input type="text" [(ngModel)]="auditFilters.action" (ngModelChange)="loadAuditLogs()" placeholder="Create / Update / Delete...">
+            <select [(ngModel)]="auditFilters.action" name="auditAction">
+              <option value="all">همه عملیات</option>
+              <option *ngFor="let a of auditMeta.actions" [value]="a">{{ a }}</option>
+            </select>
           </div>
           <div class="form-group">
             <label>نوع موجودیت</label>
-            <input type="text" [(ngModel)]="auditFilters.entityType" (ngModelChange)="loadAuditLogs()" placeholder="User / Course / Quiz...">
+            <select [(ngModel)]="auditFilters.entityType" name="auditEntityType">
+              <option value="all">همه موجودیت‌ها</option>
+              <option *ngFor="let e of auditMeta.entityTypes" [value]="e">{{ e }}</option>
+            </select>
           </div>
           <div class="form-group">
             <label>نام کاربری</label>
-            <input type="text" [(ngModel)]="auditFilters.username" (ngModelChange)="loadAuditLogs()" placeholder="username...">
+            <select [(ngModel)]="auditFilters.username" name="auditUsername">
+              <option value="all">همه کاربران</option>
+              <option *ngFor="let u of auditMeta.usernames" [value]="u">{{ u }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>رایانه</label>
+            <select [(ngModel)]="auditFilters.computer" name="auditComputer">
+              <option value="all">همه رایانه‌ها</option>
+              <option *ngFor="let cmp of auditMeta.computers" [value]="cmp">{{ cmp }}</option>
+            </select>
+          </div>
+          <div class="form-group" style="align-self: flex-end;">
+            <button class="btn-primary" (click)="refreshAuditReport()" [disabled]="auditLoading">
+              {{ auditLoading ? 'در حال بارگذاری...' : '🔄 بروزرسانی گزارش' }}
+            </button>
           </div>
         </div>
         <table class="crud-table">
@@ -2104,7 +2136,10 @@ export class AdminComponent implements OnInit {
   }
 
   auditLogs: any[] = [];
-  auditFilters: any = { action: '', entityType: '', username: '' };
+  auditFilters: any = { action: 'all', entityType: 'all', username: 'all', period: 'all', computer: 'all' };
+  auditMeta: any = { actions: [], entityTypes: [], usernames: [], computers: [] };
+  auditLoading = false;
+  auditLoaded = false;
   auditTotal = 0;
   auditPage = 1;
   uploadingLimits: any;
@@ -2125,14 +2160,24 @@ export class AdminComponent implements OnInit {
   }
 
   loadAuditLogs(): void {
-    let url = "${this.apiUrl}/admin/audit-logs?pageNumber=${this.auditPage}&pageSize=50";
-    if (this.auditFilters.action) url += "&action=" + encodeURIComponent(this.auditFilters.action);
-    if (this.auditFilters.entityType) url += "&entityType=" + encodeURIComponent(this.auditFilters.entityType);
-    if (this.auditFilters.username) url += "&username=" + encodeURIComponent(this.auditFilters.username);
+    this.auditLoading = true;
+    let url = `${this.apiUrl}/admin/audit-logs?pageNumber=${this.auditPage}&pageSize=50&period=${this.auditFilters.period}&action=${encodeURIComponent(this.auditFilters.action)}&entityType=${encodeURIComponent(this.auditFilters.entityType)}&username=${encodeURIComponent(this.auditFilters.username)}&computer=${encodeURIComponent(this.auditFilters.computer)}`;
     this.http.get<any>(url).subscribe({
-      next:(result) => { this.auditLogs = result.items || []; this.auditTotal = result.totalCount || 0; },
-      error: (err) => console.error('Failed to load audit logs:', err)
+      next: (result) => { this.auditLogs = result.items || []; this.auditTotal = result.totalCount || 0; this.auditLoading = false; this.auditLoaded = true; },
+      error: (err) => { this.auditLoading = false; console.error('Failed to load audit logs:', err) }
     });
+  }
+
+  loadAuditMeta(): void {
+    this.http.get<any>(`${this.apiUrl}/admin/audit-logs/meta`).subscribe({
+      next: (data) => this.auditMeta = data,
+      error: (err) => console.error('Failed to load audit meta:', err)
+    });
+  }
+
+  refreshAuditReport(): void {
+    this.auditPage = 1;
+    this.loadAuditLogs();
   }
 
   loadUploadLimits(): void {
