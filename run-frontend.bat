@@ -6,7 +6,7 @@ echo   AI Culture Hub - Build and Deploy
 echo ============================================
 echo.
 
-echo [1/4] Building frontend (production, ~10 seconds)...
+echo [1/4] Building frontend - production, about 10 seconds...
 cd /d "D:\Ai Site\Frontend\AngularApp"
 call npx ng build --configuration production
 if errorlevel 1 (
@@ -19,7 +19,7 @@ if errorlevel 1 (
 echo.
 echo [2/4] Verifying build output...
 if not exist "D:\Ai Site\Frontend\AngularApp\dist\angular-app\browser\index.html" (
-    echo Build output INVALID (no index.html) - deployment aborted, site untouched.
+    echo Build output INVALID - missing index.html. Deployment aborted, site untouched.
     pause
     exit /b 1
 )
@@ -36,7 +36,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $r = Invoke-WebReq
 echo.
 echo ============================================
 echo   DONE!  Site:  http://localhost:8080
-echo   (if the page looks broken press Ctrl+Shift+R)
+echo   If the page looks broken press Ctrl+Shift+R
 echo ============================================
 start http://localhost:8080
 pause
