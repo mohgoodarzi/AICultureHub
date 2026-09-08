@@ -946,7 +946,10 @@ export class CompactJoinPipe implements PipeTransform {
           <div class="form-group" *ngIf="courseForm.contentType === 'video'">
             <label>ویدیوی کوتاه (حداکثر {{ uploadLimits.maxVideoSizeMB }} مگابایت)</label>
             <input type="file" accept="video/*" (change)="onCourseVideoSelected($event)" class="file-input">
-            <div class="upload-progress" *ngIf="uploading">⏳ در حال آپلود ویدیو... لطفاً تا پایان صبر کنید</div>
+            <div class="upload-progress" *ngIf="uploading">
+              ⏳ در حال آپلود ویدیو... {{ uploadProgress }}%
+              <div class="progress-track"><div class="progress-fill" [style.width.%]="uploadProgress"></div></div>
+            </div>
             <div class="image-preview" *ngIf="courseForm.videoUrl">
               <video [src]="courseForm.videoUrl" controls style="max-width:100%; border-radius:8px;"></video>
               <button type="button" class="btn-remove" (click)="courseForm.videoUrl = ''">حذف ویدیو</button>
@@ -1718,6 +1721,21 @@ export class CompactJoinPipe implements PipeTransform {
     }
     .ct-option input[type="radio"] { accent-color: var(--theme-primary); }
 
+    .progress-track {
+      width: 100%;
+      height: 8px;
+      background: var(--theme-border);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--theme-primary), var(--theme-secondary));
+      border-radius: 4px;
+      transition: width 0.2s ease;
+    }
+
     .user-search-input {
       padding: 10px 14px;
       border: 1.5px solid var(--theme-border);
@@ -2037,6 +2055,7 @@ export class AdminComponent implements OnInit {
   uploadLimits: any = { maxImageSizeMB: 10, maxVideoSizeMB: 50 };
   uploadSettingsSaving = false;
   uploadingAvatar = false;
+  uploadProgress = 0;
   pendingAvatarFile: File | null = null;
 
   constructor(private http: HttpClient) {}
@@ -3198,13 +3217,20 @@ export class AdminComponent implements OnInit {
     const formData = new FormData();
     formData.append('file', file);
     this.uploading = true;
-    this.http.post<any>(`${this.apiUrl}/upload/video`, formData).subscribe({
-      next: (response) => {
-        this.courseForm.videoUrl = response.url;
-        this.uploading = false;
+    this.uploadProgress = 0;
+    this.http.post(`${this.apiUrl}/upload/video`, formData, { reportProgress: true, observe: 'events' }).subscribe({
+      next: (event: any) => {
+        if (event.type === 1) {
+          this.uploadProgress = Math.round(100 * event.loaded / event.total);
+        } else if (event.type === 4) {
+          this.courseForm.videoUrl = event.body.url;
+          this.uploadProgress = 100;
+          this.uploading = false;
+        }
       },
       error: (err) => {
         this.uploading = false;
+        this.uploadProgress = 0;
         alert(err.error?.message || 'خطا در آپلود ویدیو');
       }
     });
