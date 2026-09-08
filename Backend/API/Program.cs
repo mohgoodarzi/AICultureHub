@@ -190,246 +190,122 @@ using (var scope = app.Services.CreateScope())
             Console.WriteLine($"Seeded {policyItems.Length} AI policy items.");
         }
 
-        // Idempotent permission sync: add any missing permission codes (handles schema evolution
-        // on databases created before the RBAC redesign, where old lowercase codes existed).
-        var rbacPermissions = new (string Name, string Code, string Module, string Description)[]
+        // ===== Section-based permission model =====
+        // Six sections, each with a View permission that controls visibility AND access:
+        // Dashboard, Articles, Courses & Exams, Leaderboard, Management, AI Policy.
+        var sectionPermissions = new (string Name, string Code, string Module, string Description)[]
         {
-            ("View Dashboard", "Dashboard.View", "Dashboard", "View dashboard"),
-            ("Manage Dashboard", "Dashboard.Manage", "Dashboard", "Manage dashboard settings"),
-            ("View Users", "Users.View", "Users", "View user list"),
-            ("Create Users", "Users.Create", "Users", "Create new users"),
-            ("Edit Users", "Users.Edit", "Users", "Edit user information"),
-            ("Delete Users", "Users.Delete", "Users", "Delete users"),
-            ("Manage Users", "Users.Manage", "Users", "Full user management"),
-            ("View Roles", "Roles.View", "Roles", "View role list"),
-            ("Create Roles", "Roles.Create", "Roles", "Create new roles"),
-            ("Edit Roles", "Roles.Edit", "Roles", "Edit role information"),
-            ("Delete Roles", "Roles.Delete", "Roles", "Delete roles"),
-            ("Manage Roles", "Roles.Manage", "Roles", "Full role management"),
-            ("View Articles", "Articles.View", "Articles", "View article list"),
-            ("Create Articles", "Articles.Create", "Articles", "Create new articles"),
-            ("Edit Articles", "Articles.Edit", "Articles", "Edit articles"),
-            ("Delete Articles", "Articles.Delete", "Articles", "Delete articles"),
-            ("Manage Articles", "Articles.Manage", "Articles", "Full article management"),
-            ("View Categories", "Categories.View", "Categories", "View category list"),
-            ("Create Categories", "Categories.Create", "Categories", "Create new categories"),
-            ("Edit Categories", "Categories.Edit", "Categories", "Edit categories"),
-            ("Delete Categories", "Categories.Delete", "Categories", "Delete categories"),
-            ("Manage Categories", "Categories.Manage", "Categories", "Full category management"),
-            ("View Courses", "Courses.View", "Courses", "View course list"),
-            ("Create Courses", "Courses.Create", "Courses", "Create new courses"),
-            ("Edit Courses", "Courses.Edit", "Courses", "Edit courses"),
-            ("Delete Courses", "Courses.Delete", "Courses", "Delete courses"),
-            ("Manage Courses", "Courses.Manage", "Courses", "Full course management"),
-            ("View Quizzes", "Quizzes.View", "Quizzes", "View quiz list"),
-            ("Create Quizzes", "Quizzes.Create", "Quizzes", "Create new quizzes"),
-            ("Edit Quizzes", "Quizzes.Edit", "Quizzes", "Edit quizzes"),
-            ("Delete Quizzes", "Quizzes.Delete", "Quizzes", "Delete quizzes"),
-            ("Manage Quizzes", "Quizzes.Manage", "Quizzes", "Full quiz management"),
-            ("View Challenges", "Challenges.View", "Challenges", "View challenge list"),
-            ("Create Challenges", "Challenges.Create", "Challenges", "Create new challenges"),
-            ("Edit Challenges", "Challenges.Edit", "Challenges", "Edit challenges"),
-            ("Delete Challenges", "Challenges.Delete", "Challenges", "Delete challenges"),
-            ("Manage Challenges", "Challenges.Manage", "Challenges", "Full challenge management"),
-            ("View Announcements", "Announcements.View", "Announcements", "View announcements"),
-            ("Create Announcements", "Announcements.Create", "Announcements", "Create announcements"),
-            ("Edit Announcements", "Announcements.Edit", "Announcements", "Edit announcements"),
-            ("Delete Announcements", "Announcements.Delete", "Announcements", "Delete announcements"),
-            ("Manage Announcements", "Announcements.Manage", "Announcements", "Full announcement management"),
-            ("View Reports", "Reports.View", "Reports", "View reports"),
-            ("Manage Reports", "Reports.Manage", "Reports", "Manage reports"),
-            ("View Settings", "Settings.View", "Settings", "View settings"),
-            ("Manage Settings", "Settings.Manage", "Settings", "Manage settings"),
-            ("View Glossary", "Glossary.View", "Glossary", "View glossary"),
-            ("Create Glossary", "Glossary.Create", "Glossary", "Create glossary entries"),
-            ("Edit Glossary", "Glossary.Edit", "Glossary", "Edit glossary entries"),
-            ("Delete Glossary", "Glossary.Delete", "Glossary", "Delete glossary entries"),
-            ("Manage Glossary", "Glossary.Manage", "Glossary", "Full glossary management"),
+            ("View Dashboard", "Dashboard.View", "Dashboard", "مشاهده داشبورد"),
+            ("View Articles", "Articles.View", "Articles", "مشاهده مقالات"),
+            ("View Courses & Exams", "Courses.View", "CoursesExams", "مشاهده دوره‌ها و آزمون‌ها"),
+            ("View Leaderboard", "Scoreboard.View", "Leaderboard", "مشاهده جدول امتیازات"),
+            ("View Management", "Management.View", "Management", "مشاهده پنل مدیریت (کاربران، نقش‌ها، واحدها، سمت‌ها، اطلاعیه‌ها، خط‌مشی AI، تنظیمات)"),
+            ("View AI Policy", "AiPolicy.View", "AIPolicy", "مشاهده خط‌مشی هوش مصنوعی"),
         };
 
-        var existingPerms = dbContext.Permissions.ToList();
         var existingByCode = new Dictionary<string, Permission>(StringComparer.OrdinalIgnoreCase);
-        foreach (var ep in existingPerms)
+        foreach (var ep in dbContext.Permissions.ToList())
         {
             existingByCode[ep.Code] = ep;
         }
 
-        // Normalize legacy lowercase codes (e.g. "users.view") to the canonical casing ("Users.View")
-        foreach (var def in rbacPermissions)
+        foreach (var def in sectionPermissions)
         {
-            if (existingByCode.TryGetValue(def.Code, out var match) && match.Code != def.Code)
+            if (existingByCode.TryGetValue(def.Code, out var match))
             {
-                match.Code = def.Code;
-                match.Name = def.Name;
-                match.Module = def.Module;
-                match.Description = def.Description;
+                if (match.Code != def.Code) { match.Code = def.Code; match.Name = def.Name; match.Module = def.Module; match.Description = def.Description; }
             }
         }
         dbContext.SaveChanges();
 
-        var newPerms = rbacPermissions
+        var missingPerms = sectionPermissions
             .Where(p => !existingByCode.ContainsKey(p.Code))
             .Select(p => new Permission { Name = p.Name, Code = p.Code, Module = p.Module, Description = p.Description, IsActive = true, CreatedDate = DateTime.UtcNow })
             .ToList();
-        if (newPerms.Any())
+        if (missingPerms.Any())
         {
-            dbContext.Permissions.AddRange(newPerms);
+            dbContext.Permissions.AddRange(missingPerms);
             dbContext.SaveChanges();
-            Console.WriteLine($"Seeded {newPerms.Count} new permissions.");
+            Console.WriteLine($"Seeded {missingPerms.Count} section permissions.");
         }
 
-        // Refresh lookup with any newly inserted rows
         existingByCode = dbContext.Permissions.ToDictionary(p => p.Code, p => p, StringComparer.OrdinalIgnoreCase);
 
-        // Ensure the Administrator role always has every permission (self-healing for role-permission drift)
+        // Deactivate ALL legacy permissions (old 57-code model) - the new model has only 6
+        var activeCodes = sectionPermissions.Select(s => s.Code).ToList();
+        var legacyPerms = dbContext.Permissions.Where(p => p.IsActive).ToList().Where(p => !activeCodes.Contains(p.Code)).ToList();
+        foreach (var lp in legacyPerms) { lp.IsActive = false; }
+        if (legacyPerms.Any()) { dbContext.SaveChanges(); Console.WriteLine($"Deactivated {legacyPerms.Count} legacy permissions."); }
+
+        // Remove old roles entirely; recreate the two standard roles
+        var oldRoles = dbContext.Roles.Include(r => r.RolePermissions).Where(r => r.Name != "Administrator" && r.Name != "Employee").ToList();
+        foreach (var or in oldRoles)
+        {
+            dbContext.RolePermissions.RemoveRange(or.RolePermissions);
+            dbContext.UserRoles.RemoveRange(dbContext.UserRoles.Where(ur => ur.RoleId == or.Id));
+            or.IsActive = false;
+        }
+        if (oldRoles.Any()) { dbContext.SaveChanges(); Console.WriteLine($"Deactivated {oldRoles.Count} legacy roles."); }
+
+        // Administrator: every section + legacy full permissions kept for backward compat of admin APIs
+        var adminRole = dbContext.Roles.Include(r => r.RolePermissions).FirstOrDefault(r => r.Name == "Administrator");
+        if (adminRole == null)
+        {
+            adminRole = new Role { Name = "Administrator", Description = "مدیر سیستم", IsActive = true, CreatedDate = DateTime.UtcNow };
+            dbContext.Roles.Add(adminRole);
+            dbContext.SaveChanges();
+        }
+        var adminOwned = adminRole.RolePermissions.Select(rp => rp.PermissionId).ToHashSet();
+        var adminMissing = existingByCode.Values.Where(p => p.IsActive).Where(p => !adminOwned.Contains(p.Id)).ToList();
+        foreach (var p in adminMissing)
+        {
+            dbContext.RolePermissions.Add(new RolePermission { RoleId = adminRole.Id, PermissionId = p.Id });
+        }
+        dbContext.SaveChanges();
+
+        // Employee: all sections EXCEPT Management and Leaderboard (admin can enable later)
+        var employeeRole = dbContext.Roles.Include(r => r.RolePermissions).FirstOrDefault(r => r.Name == "Employee");
+        if (employeeRole == null)
+        {
+            employeeRole = new Role { Name = "Employee", Description = "کارمند", IsActive = true, CreatedDate = DateTime.UtcNow };
+            dbContext.Roles.Add(employeeRole);
+            dbContext.SaveChanges();
+        }
+        var employeeCodes = new[] { "Dashboard.View", "Articles.View", "Courses.View", "AiPolicy.View" };
+        var employeePerms = employeeCodes.Select(code => existingByCode[code]).Where(p => p.IsActive).ToList();
+        var empOwned = employeeRole.RolePermissions.Select(rp => rp.PermissionId).ToHashSet();
+        var empMissing = employeePerms.Where(p => !empOwned.Contains(p.Id)).ToList();
+        var empLegacyToRemove = employeeRole.RolePermissions.Where(rp => !employeePerms.Any(p => p.Id == rp.PermissionId)).ToList();
+        foreach (var rp in empLegacyToRemove) { dbContext.RolePermissions.Remove(rp); }
+        foreach (var p in empMissing)
+        {
+            dbContext.RolePermissions.Add(new RolePermission { RoleId = employeeRole.Id, PermissionId = p.Id });
+        }
+        dbContext.SaveChanges();
+        Console.WriteLine("Seeded section-based roles: Administrator (all), Employee (Dashboard/Articles/Courses/AI Policy).");
+
+        // Self-heal: Administrator always has every permission
         var adminRoleSync = dbContext.Roles.Include(r => r.RolePermissions).FirstOrDefault(r => r.Name == "Administrator");
         if (adminRoleSync != null)
         {
             var allPermIds = existingByCode.Values.Where(p => p.IsActive).Select(p => p.Id).ToList();
-            var adminOwned = adminRoleSync.RolePermissions.Select(rp => rp.PermissionId).ToHashSet();
-            var missing = allPermIds.Where(id => !adminOwned.Contains(id)).ToList();
-            if (missing.Any())
+            var adminOwned2 = adminRoleSync.RolePermissions.Select(rp => rp.PermissionId).ToHashSet();
+            var missing2 = allPermIds.Where(id => !adminOwned2.Contains(id)).ToList();
+            if (missing2.Any())
             {
-                foreach (var pid in missing)
+                foreach (var pid in missing2)
                 {
                     dbContext.RolePermissions.Add(new RolePermission { RoleId = adminRoleSync.Id, PermissionId = pid });
                 }
                 dbContext.SaveChanges();
-                Console.WriteLine($"Granted {missing.Count} missing permissions to Administrator role.");
+                Console.WriteLine($"Granted {missing2.Count} missing permissions to Administrator role.");
             }
         }
-
-        // Employees get access to ALL user-facing sections; the Admin Panel remains exclusive to
-        // the Administrator role (nav, AdminGuard and RequireAdministrator all check that role).
-        // One-time bootstrap: afterwards the administrator can customize the role via the Roles tab.
-        var employeeSyncDone = dbContext.SystemSettings.Any(s => s.SettingKey == "Employee_AllPermissions_Bootstrap");
-        if (!employeeSyncDone)
-        {
-            var employeeRoleSync = dbContext.Roles.Include(r => r.RolePermissions).FirstOrDefault(r => r.Name == "Employee");
-            if (employeeRoleSync != null)
-            {
-                var allPermIds2 = existingByCode.Values.Where(p => p.IsActive).Select(p => p.Id).ToList();
-                var empOwned = employeeRoleSync.RolePermissions.Select(rp => rp.PermissionId).ToHashSet();
-                var missingEmp = allPermIds2.Where(id => !empOwned.Contains(id)).ToList();
-                if (missingEmp.Any())
-                {
-                    foreach (var pid in missingEmp)
-                    {
-                        dbContext.RolePermissions.Add(new RolePermission { RoleId = employeeRoleSync.Id, PermissionId = pid });
-                    }
-                    dbContext.SaveChanges();
-                    Console.WriteLine($"Granted {missingEmp.Count} missing permissions to Employee role (all except Admin Panel which requires Administrator).");
-                }
-                dbContext.SystemSettings.Add(new SystemSetting { SettingKey = "Employee_AllPermissions_Bootstrap", SettingValue = "true", Description = "Employee role full-permission bootstrap flag", Category = "Roles", IsActive = true, CreatedDate = DateTime.UtcNow });
-                dbContext.SaveChanges();
-            }
-        }
-
-        if (!dbContext.Permissions.Any())
-        {
-            var permissions = new List<Permission>
-            {
-                new Permission { Name = "View Dashboard", Code = "Dashboard.View", Module = "Dashboard", Description = "View dashboard", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Manage Dashboard", Code = "Dashboard.Manage", Module = "Dashboard", Description = "Manage dashboard settings", IsActive = true, CreatedDate = DateTime.UtcNow },
-
-                new Permission { Name = "View Users", Code = "Users.View", Module = "Users", Description = "View user list", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Create Users", Code = "Users.Create", Module = "Users", Description = "Create new users", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Edit Users", Code = "Users.Edit", Module = "Users", Description = "Edit user information", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Delete Users", Code = "Users.Delete", Module = "Users", Description = "Delete users", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Manage Users", Code = "Users.Manage", Module = "Users", Description = "Full user management", IsActive = true, CreatedDate = DateTime.UtcNow },
-
-                new Permission { Name = "View Roles", Code = "Roles.View", Module = "Roles", Description = "View role list", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Create Roles", Code = "Roles.Create", Module = "Roles", Description = "Create new roles", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Edit Roles", Code = "Roles.Edit", Module = "Roles", Description = "Edit role information", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Delete Roles", Code = "Roles.Delete", Module = "Roles", Description = "Delete roles", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Manage Roles", Code = "Roles.Manage", Module = "Roles", Description = "Full role management", IsActive = true, CreatedDate = DateTime.UtcNow },
-
-                new Permission { Name = "View Articles", Code = "Articles.View", Module = "Articles", Description = "View article list", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Create Articles", Code = "Articles.Create", Module = "Articles", Description = "Create new articles", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Edit Articles", Code = "Articles.Edit", Module = "Articles", Description = "Edit articles", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Delete Articles", Code = "Articles.Delete", Module = "Articles", Description = "Delete articles", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Manage Articles", Code = "Articles.Manage", Module = "Articles", Description = "Full article management", IsActive = true, CreatedDate = DateTime.UtcNow },
-
-                new Permission { Name = "View Categories", Code = "Categories.View", Module = "Categories", Description = "View category list", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Create Categories", Code = "Categories.Create", Module = "Categories", Description = "Create new categories", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Edit Categories", Code = "Categories.Edit", Module = "Categories", Description = "Edit categories", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Delete Categories", Code = "Categories.Delete", Module = "Categories", Description = "Delete categories", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Manage Categories", Code = "Categories.Manage", Module = "Categories", Description = "Full category management", IsActive = true, CreatedDate = DateTime.UtcNow },
-
-                new Permission { Name = "View Courses", Code = "Courses.View", Module = "Courses", Description = "View course list", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Create Courses", Code = "Courses.Create", Module = "Courses", Description = "Create new courses", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Edit Courses", Code = "Courses.Edit", Module = "Courses", Description = "Edit courses", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Delete Courses", Code = "Courses.Delete", Module = "Courses", Description = "Delete courses", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Manage Courses", Code = "Courses.Manage", Module = "Courses", Description = "Full course management", IsActive = true, CreatedDate = DateTime.UtcNow },
-
-                new Permission { Name = "View Quizzes", Code = "Quizzes.View", Module = "Quizzes", Description = "View quiz list", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Create Quizzes", Code = "Quizzes.Create", Module = "Quizzes", Description = "Create new quizzes", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Edit Quizzes", Code = "Quizzes.Edit", Module = "Quizzes", Description = "Edit quizzes", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Delete Quizzes", Code = "Quizzes.Delete", Module = "Quizzes", Description = "Delete quizzes", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Manage Quizzes", Code = "Quizzes.Manage", Module = "Quizzes", Description = "Full quiz management", IsActive = true, CreatedDate = DateTime.UtcNow },
-
-                new Permission { Name = "View Challenges", Code = "Challenges.View", Module = "Challenges", Description = "View challenge list", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Create Challenges", Code = "Challenges.Create", Module = "Challenges", Description = "Create new challenges", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Edit Challenges", Code = "Challenges.Edit", Module = "Challenges", Description = "Edit challenges", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Delete Challenges", Code = "Challenges.Delete", Module = "Challenges", Description = "Delete challenges", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Manage Challenges", Code = "Challenges.Manage", Module = "Challenges", Description = "Full challenge management", IsActive = true, CreatedDate = DateTime.UtcNow },
-
-                new Permission { Name = "View Announcements", Code = "Announcements.View", Module = "Announcements", Description = "View announcements", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Create Announcements", Code = "Announcements.Create", Module = "Announcements", Description = "Create announcements", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Edit Announcements", Code = "Announcements.Edit", Module = "Announcements", Description = "Edit announcements", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Delete Announcements", Code = "Announcements.Delete", Module = "Announcements", Description = "Delete announcements", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Manage Announcements", Code = "Announcements.Manage", Module = "Announcements", Description = "Full announcement management", IsActive = true, CreatedDate = DateTime.UtcNow },
-
-                new Permission { Name = "View Reports", Code = "Reports.View", Module = "Reports", Description = "View reports", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Manage Reports", Code = "Reports.Manage", Module = "Reports", Description = "Manage reports", IsActive = true, CreatedDate = DateTime.UtcNow },
-
-                new Permission { Name = "View Settings", Code = "Settings.View", Module = "Settings", Description = "View settings", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Manage Settings", Code = "Settings.Manage", Module = "Settings", Description = "Manage settings", IsActive = true, CreatedDate = DateTime.UtcNow },
-
-                new Permission { Name = "View Glossary", Code = "Glossary.View", Module = "Glossary", Description = "View glossary", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Create Glossary", Code = "Glossary.Create", Module = "Glossary", Description = "Create glossary entries", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Edit Glossary", Code = "Glossary.Edit", Module = "Glossary", Description = "Edit glossary entries", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Delete Glossary", Code = "Glossary.Delete", Module = "Glossary", Description = "Delete glossary entries", IsActive = true, CreatedDate = DateTime.UtcNow },
-                new Permission { Name = "Manage Glossary", Code = "Glossary.Manage", Module = "Glossary", Description = "Full glossary management", IsActive = true, CreatedDate = DateTime.UtcNow },
-            };
-            dbContext.Permissions.AddRange(permissions);
-            dbContext.SaveChanges();
-            Console.WriteLine($"Seeded {permissions.Count} permissions.");
-        }
-
-        if (!dbContext.Roles.Any())
-        {
-            var allPermissions = dbContext.Permissions.ToList();
-            var adminPerms = allPermissions.Select(p => p.Id).ToList();
-            var editorModules = new[] { "Articles", "Categories", "Announcements", "Glossary" };
-            var instructorModules = new[] { "Courses", "Quizzes", "Challenges" };
-            var contentManagerPerms = allPermissions.Where(p => p.Module != "Users" && p.Module != "Roles" && p.Module != "Settings" && p.Module != "Reports").Select(p => p.Id).ToList();
-            var editorPerms = allPermissions.Where(p => editorModules.Contains(p.Module)).Select(p => p.Id).ToList();
-            var instructorPerms = allPermissions.Where(p => instructorModules.Contains(p.Module)).Select(p => p.Id).ToList();
-
-            var adminRole = new Role { Name = "Administrator", Description = "Full system access", IsActive = true, CreatedDate = DateTime.UtcNow };
-            var contentManagerRole = new Role { Name = "ContentManager", Description = "Manage content (articles, courses, etc.)", IsActive = true, CreatedDate = DateTime.UtcNow };
-            var editorRole = new Role { Name = "Editor", Description = "Edit articles and content", IsActive = true, CreatedDate = DateTime.UtcNow };
-            var instructorRole = new Role { Name = "Instructor", Description = "Manage courses and quizzes", IsActive = true, CreatedDate = DateTime.UtcNow };
-            var employeeRole = new Role { Name = "Employee", Description = "Basic employee access", IsActive = true, CreatedDate = DateTime.UtcNow };
-
-            dbContext.Roles.AddRange(adminRole, contentManagerRole, editorRole, instructorRole, employeeRole);
-            dbContext.SaveChanges();
-
-            dbContext.RolePermissions.AddRange(adminPerms.Select(pid => new RolePermission { RoleId = adminRole.Id, PermissionId = pid }));
-            dbContext.RolePermissions.AddRange(contentManagerPerms.Select(pid => new RolePermission { RoleId = contentManagerRole.Id, PermissionId = pid }));
-            dbContext.RolePermissions.AddRange(editorPerms.Select(pid => new RolePermission { RoleId = editorRole.Id, PermissionId = pid }));
-            dbContext.RolePermissions.AddRange(instructorPerms.Select(pid => new RolePermission { RoleId = instructorRole.Id, PermissionId = pid }));
-            dbContext.SaveChanges();
-
-            Console.WriteLine($"Seeded 5 roles with permissions.");
-        }
-
         // Seed admin user with Administrator role
         if (!dbContext.Users.Any(u => u.Username == "admin"))
         {
-            var adminRole = dbContext.Roles.FirstOrDefault(r => r.Name == "Administrator");
-            if (adminRole != null)
+            var adminRoleOld = dbContext.Roles.FirstOrDefault(r => r.Name == "Administrator");
+            if (adminRoleOld != null)
             {
                 var salt = Guid.NewGuid().ToString();
                 var adminUser = new User
@@ -451,7 +327,7 @@ using (var scope = app.Services.CreateScope())
                 dbContext.UserRoles.Add(new UserRole
                 {
                     UserId = adminUser.Id,
-                    RoleId = adminRole.Id,
+                    RoleId = adminRoleOld.Id,
                     AssignedDate = DateTime.UtcNow
                 });
                 dbContext.SaveChanges();

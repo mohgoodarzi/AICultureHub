@@ -12,6 +12,7 @@ namespace AICultureHub.API.Controllers;
 [Route("api/[controller]")]
 [Authorize]
 [RequireActiveUser]
+[RequirePermission(Permissions.Courses_View)]
 public class QuizzesController : ControllerBase
 {
     private readonly IQuizService _quizService;
@@ -78,7 +79,7 @@ public class QuizzesController : ControllerBase
     // ===== Admin quiz management =====
 
     [HttpGet("admin/all")]
-    [RequirePermission(Permissions.Quizzes_View)]
+    [RequirePermission(Permissions.Courses_View)]
     public async Task<IActionResult> GetQuizzesForAdmin()
     {
         var quizzes = await _quizService.GetQuizzesForAdminAsync();
@@ -86,7 +87,7 @@ public class QuizzesController : ControllerBase
     }
 
     [HttpGet("admin/{id}")]
-    [RequirePermission(Permissions.Quizzes_View)]
+    [RequirePermission(Permissions.Courses_View)]
     public async Task<IActionResult> GetQuizForAdmin(int id)
     {
         var quiz = await _quizService.GetQuizForAdminAsync(id);
@@ -95,7 +96,7 @@ public class QuizzesController : ControllerBase
     }
 
     [HttpPost("admin")]
-    [RequirePermission(Permissions.Quizzes_Create)]
+    [RequirePermission(Permissions.Courses_View)]
     public async Task<IActionResult> CreateQuiz([FromBody] SaveQuizRequest request)
     {
         var userId = GetCurrentUserId();
@@ -112,7 +113,7 @@ public class QuizzesController : ControllerBase
     }
 
     [HttpPut("admin/{id}")]
-    [RequirePermission(Permissions.Quizzes_Edit)]
+    [RequirePermission(Permissions.Courses_View)]
     public async Task<IActionResult> UpdateQuiz(int id, [FromBody] SaveQuizRequest request)
     {
         var userId = GetCurrentUserId();
@@ -130,7 +131,7 @@ public class QuizzesController : ControllerBase
     }
 
     [HttpDelete("admin/{id}")]
-    [RequirePermission(Permissions.Quizzes_Delete)]
+    [RequirePermission(Permissions.Courses_View)]
     public async Task<IActionResult> DeleteQuiz(int id)
     {
         var result = await _quizService.DeleteQuizAsync(id);

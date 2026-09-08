@@ -49,7 +49,7 @@ public class AiPolicyController : ControllerBase
 
     /// <summary>Replace the whole policy list (Administrator only). Simple save-all semantics.</summary>
     [HttpPut]
-    [RequireAdministrator]
+    [RequirePermission(Permissions.Management_View)]
     public async Task<IActionResult> SavePolicy([FromBody] SaveAiPolicyRequest request)
     {
         if (request.Items == null) return BadRequest(new { message = "فهرست اقلام ارسال نشده است" });

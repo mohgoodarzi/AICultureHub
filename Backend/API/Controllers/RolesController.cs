@@ -37,7 +37,7 @@ public class RolesController : ControllerBase
     }
 
     [HttpGet]
-    [RequirePermission(Permissions.Roles_View)]
+    [RequirePermission(Permissions.Management_View)]
     public async Task<IActionResult> GetRoles()
     {
         var roles = await _adminService.GetRolesAsync();
@@ -45,7 +45,7 @@ public class RolesController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [RequirePermission(Permissions.Roles_View)]
+    [RequirePermission(Permissions.Management_View)]
     public async Task<IActionResult> GetRole(int id)
     {
         var role = await _adminService.GetRoleByIdAsync(id);
@@ -54,7 +54,7 @@ public class RolesController : ControllerBase
     }
 
     [HttpPost]
-    [RequirePermission(Permissions.Roles_Create)]
+    [RequirePermission(Permissions.Management_View)]
     public async Task<IActionResult> CreateRole([FromBody] CreateRoleRequest request)
     {
         try
@@ -71,7 +71,7 @@ public class RolesController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    [RequirePermission(Permissions.Roles_Edit)]
+    [RequirePermission(Permissions.Management_View)]
     public async Task<IActionResult> UpdateRole(int id, [FromBody] UpdateRoleRequest request)
     {
         try
@@ -89,7 +89,7 @@ public class RolesController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [RequirePermission(Permissions.Roles_Delete)]
+    [RequirePermission(Permissions.Management_View)]
     public async Task<IActionResult> DeleteRole(int id)
     {
         try
@@ -105,7 +105,7 @@ public class RolesController : ControllerBase
     }
 
     [HttpGet("permissions")]
-    [RequirePermission(Permissions.Roles_View)]
+    [RequirePermission(Permissions.Management_View)]
     public async Task<IActionResult> GetPermissions()
     {
         var permissions = await _adminService.GetPermissionsAsync();
@@ -113,7 +113,7 @@ public class RolesController : ControllerBase
     }
 
     [HttpGet("permissions/grouped")]
-    [RequirePermission(Permissions.Roles_View)]
+    [RequirePermission(Permissions.Management_View)]
     public async Task<IActionResult> GetPermissionsGrouped()
     {
         var permissions = await _adminService.GetPermissionsGroupedByModuleAsync();
@@ -126,7 +126,7 @@ public class RolesController : ControllerBase
         // Users may always read their own permissions (needed by the SPA at login).
         // Reading another user's permissions requires Roles.View.
         var currentUserId = GetCurrentUserId();
-        if (currentUserId != userId && !await HasPermissionAsync(Permissions.Roles_View))
+        if (currentUserId != userId && !await HasPermissionAsync(Permissions.Management_View))
         {
             return Forbid();
         }
@@ -138,7 +138,7 @@ public class RolesController : ControllerBase
     public async Task<IActionResult> GetUserRoles(int userId)
     {
         var currentUserId = GetCurrentUserId();
-        if (currentUserId != userId && !await HasPermissionAsync(Permissions.Roles_View))
+        if (currentUserId != userId && !await HasPermissionAsync(Permissions.Management_View))
         {
             return Forbid();
         }
@@ -147,7 +147,7 @@ public class RolesController : ControllerBase
     }
 
     [HttpPost("assign")]
-    [RequirePermission(Permissions.Users_Manage)]
+    [RequirePermission(Permissions.Management_View)]
     public async Task<IActionResult> AssignRoleToUser([FromBody] AssignRoleRequest request)
     {
         var userId = GetCurrentUserId();
@@ -158,7 +158,7 @@ public class RolesController : ControllerBase
     }
 
     [HttpDelete("user/{userId}/role/{roleId}")]
-    [RequirePermission(Permissions.Users_Manage)]
+    [RequirePermission(Permissions.Management_View)]
     public async Task<IActionResult> RemoveRoleFromUser(int userId, int roleId)
     {
         var result = await _adminService.RemoveRoleFromUserAsync(userId, roleId);

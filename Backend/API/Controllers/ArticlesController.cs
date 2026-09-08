@@ -10,6 +10,7 @@ namespace AICultureHub.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[RequirePermission(Permissions.Articles_View)]
 public class ArticlesController : ControllerBase
 {
     private readonly IArticleService _articleService;
@@ -87,7 +88,7 @@ public class ArticlesController : ControllerBase
     {
         var userId = GetCurrentUserId();
         var isAuthenticated = User.Identity?.IsAuthenticated ?? false;
-        var includeUnpublished = isAuthenticated && await HasPermissionAsync(Permissions.Articles_Edit);
+        var includeUnpublished = isAuthenticated && await HasPermissionAsync(Permissions.Articles_View);
         var article = await _articleService.GetArticleBySlugAsync(slug, userId, includeUnpublished);
         if (article == null) return NotFound();
         return Ok(article);
@@ -100,7 +101,7 @@ public class ArticlesController : ControllerBase
         var userId = GetCurrentUserId();
         if (userId == null) return Unauthorized();
 
-        if (!await HasPermissionAsync(Permissions.Articles_Create))
+        if (!await HasPermissionAsync(Permissions.Articles_View))
             return Forbid();
 
         try
@@ -126,7 +127,7 @@ public class ArticlesController : ControllerBase
         var userId = GetCurrentUserId();
         if (userId == null) return Unauthorized(new { message = "User not authenticated" });
 
-        if (!await HasPermissionAsync(Permissions.Articles_Edit))
+        if (!await HasPermissionAsync(Permissions.Articles_View))
             return Forbid();
 
         try
@@ -158,7 +159,7 @@ public class ArticlesController : ControllerBase
         var userId = GetCurrentUserId();
         if (userId == null) return Unauthorized();
 
-        if (!await HasPermissionAsync(Permissions.Articles_Delete))
+        if (!await HasPermissionAsync(Permissions.Articles_View))
             return Forbid();
 
         var result = await _articleService.DeleteArticleAsync(id);

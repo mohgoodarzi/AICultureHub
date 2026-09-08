@@ -100,7 +100,7 @@ public class UploadController : ControllerBase
         await context.SaveChangesAsync();
     }
 
-    [RequirePermission(Permissions.Articles_Edit)]
+    [RequirePermission(Permissions.Courses_View)]
     [HttpPost("image")]
     public async Task<IActionResult> UploadImage(IFormFile file)
     {
@@ -110,7 +110,7 @@ public class UploadController : ControllerBase
         return await UploadFile(file, "images", _allowedImageExtensions, maxImage * 1024L * 1024L, "تصویر");
     }
 
-    [RequirePermission(Permissions.Articles_Edit)]
+    [RequirePermission(Permissions.Courses_View)]
     [HttpPost("video")]
     public async Task<IActionResult> UploadVideo(IFormFile file)
     {
@@ -120,7 +120,7 @@ public class UploadController : ControllerBase
         return await UploadFile(file, "videos", _allowedVideoExtensions, maxVideo * 1024L * 1024L, "ویدیو");
     }
 
-    [RequirePermission(Permissions.Articles_Edit)]
+    [RequirePermission(Permissions.Courses_View)]
     [HttpPost("file")]
     public async Task<IActionResult> UploadAnyFile(IFormFile file)
     {

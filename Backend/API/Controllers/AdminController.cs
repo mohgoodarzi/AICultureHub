@@ -13,7 +13,7 @@ namespace AICultureHub.API.Controllers;
 [Route("api/[controller]")]
 [Authorize]
 [RequireActiveUser]
-[RequireAdministrator]
+[RequirePermission(Permissions.Management_View)]
 public class AdminController : ControllerBase
 {
     private readonly IAdminService _adminService;

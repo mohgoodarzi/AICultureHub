@@ -34,6 +34,7 @@ public class DashboardController : ControllerBase
     }
 
     [HttpGet("leaderboard")]
+    [RequirePermission(Permissions.Scoreboard_View)]
     public async Task<IActionResult> GetLeaderboard([FromQuery] string period = "all", [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
     {
         var leaderboard = await _gamificationService.GetLeaderboardAsync(period, page, pageSize);

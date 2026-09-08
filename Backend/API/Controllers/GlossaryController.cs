@@ -43,7 +43,7 @@ public class GlossaryController : ControllerBase
     }
 
     [HttpPost]
-    [RequirePermission(Permissions.Glossary_Create)]
+    [RequirePermission(Permissions.Management_View)]
     public async Task<IActionResult> CreateTerm([FromBody] GlossaryDto model)
     {
         var userId = GetCurrentUserId() ?? 0;
@@ -52,7 +52,7 @@ public class GlossaryController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    [RequirePermission(Permissions.Glossary_Edit)]
+    [RequirePermission(Permissions.Management_View)]
     public async Task<IActionResult> UpdateTerm(int id, [FromBody] GlossaryDto model)
     {
         var userId = GetCurrentUserId() ?? 0;
@@ -62,7 +62,7 @@ public class GlossaryController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [RequirePermission(Permissions.Glossary_Delete)]
+    [RequirePermission(Permissions.Management_View)]
     public async Task<IActionResult> DeleteTerm(int id)
     {
         var result = await _glossaryService.DeleteTermAsync(id);

@@ -24,43 +24,43 @@ import { filter } from 'rxjs/operators';
         </div>
         
         <ul class="nav-menu">
-          <li>
+          <li *ngIf="auth.hasPermission('Dashboard.View')">
             <a routerLink="/dashboard" routerLinkActive="active" class="nav-item">
               <span class="icon">🏠</span>
               <span class="nav-label" *ngIf="isExpanded">داشبورد</span>
             </a>
           </li>
-          <li *ngIf="auth.hasModule('Articles')">
+          <li *ngIf="auth.hasPermission('Articles.View')">
             <a routerLink="/articles" routerLinkActive="active" class="nav-item">
               <span class="icon">📄</span>
               <span class="nav-label" *ngIf="isExpanded">مقالات</span>
             </a>
           </li>
-          <li *ngIf="auth.hasModule('Courses')">
+          <li *ngIf="auth.hasPermission('Courses.View')">
             <a routerLink="/courses" routerLinkActive="active" class="nav-item">
               <span class="icon">📚</span>
               <span class="nav-label" *ngIf="isExpanded">دوره</span>
             </a>
           </li>
-          <li *ngIf="auth.hasModule('Quizzes')">
+          <li *ngIf="auth.hasPermission('Courses.View')">
             <a routerLink="/quizzes" routerLinkActive="active" class="nav-item">
               <span class="icon">❓</span>
               <span class="nav-label" *ngIf="isExpanded">آزمون</span>
             </a>
           </li>
-          <li>
+          <li *ngIf="auth.hasPermission('Scoreboard.View')">
             <a routerLink="/leaderboard" routerLinkActive="active" class="nav-item">
               <span class="icon">🏆</span>
               <span class="nav-label" *ngIf="isExpanded">جدول امتیازات</span>
             </a>
           </li>
-          <li *ngIf="auth.isAdmin()">
+          <li *ngIf="auth.hasPermission('Management.View')">
             <a routerLink="/admin" routerLinkActive="active" class="nav-item">
               <span class="icon">⚙️</span>
               <span class="nav-label" *ngIf="isExpanded">مدیریت</span>
             </a>
           </li>
-          <li>
+          <li *ngIf="auth.hasPermission('AiPolicy.View')">
             <a routerLink="/ai-policy" routerLinkActive="active" class="nav-item">
               <span class="icon">📋</span>
               <span class="nav-label" *ngIf="isExpanded">خط‌مشی AI</span>

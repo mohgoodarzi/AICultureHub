@@ -116,4 +116,8 @@ public static class Permissions
     public const string Glossary_Edit = "Glossary.Edit";
     public const string Glossary_Delete = "Glossary.Delete";
     public const string Glossary_Manage = "Glossary.Manage";
+
+    public const string Scoreboard_View = "Scoreboard.View";
+    public const string AiPolicy_View = "AiPolicy.View";
+    public const string Management_View = "Management.View";
 }

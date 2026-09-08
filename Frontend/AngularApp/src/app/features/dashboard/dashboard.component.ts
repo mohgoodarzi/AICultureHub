@@ -25,7 +25,7 @@ import { ShamsiDate } from '../../core/utils/shamsi-date';
           <div class="hero-avatar">
             <img *ngIf="auth.user()?.avatarUrl && !avatarError; else defaultAvatar" [src]="auth.user()?.avatarUrl" alt="تصویر پروفایل" (error)="avatarError = true">
             <ng-template #defaultAvatar>
-              <div class="hero-avatar-default">{{ (auth.user()?.firstName || '؟')?.charAt(0) }}</div>
+              <div class="hero-avatar-default">{{ (auth.user()?.firstName || '؟').charAt(0) }}</div>
             </ng-template>
           </div>
           <div class="hero-text">

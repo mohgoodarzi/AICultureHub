@@ -10,6 +10,7 @@ namespace AICultureHub.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[RequirePermission(Permissions.Courses_View)]
 public class CoursesController : ControllerBase
 {
     private readonly ICourseService _courseService;
@@ -54,7 +55,7 @@ public class CoursesController : ControllerBase
         var userId = GetCurrentUserId();
         if (userId == null) return Unauthorized();
 
-        if (!await HasPermissionAsync(Permissions.Courses_Create))
+        if (!await HasPermissionAsync(Permissions.Courses_View))
             return Forbid();
 
         try
@@ -76,7 +77,7 @@ public class CoursesController : ControllerBase
         var userId = GetCurrentUserId();
         if (userId == null) return Unauthorized();
 
-        if (!await HasPermissionAsync(Permissions.Courses_Edit))
+        if (!await HasPermissionAsync(Permissions.Courses_View))
             return Forbid();
 
         var course = await _courseService.UpdateCourseAsync(id, request, userId.Value);
@@ -91,7 +92,7 @@ public class CoursesController : ControllerBase
         var userId = GetCurrentUserId();
         if (userId == null) return Unauthorized();
 
-        if (!await HasPermissionAsync(Permissions.Courses_Delete))
+        if (!await HasPermissionAsync(Permissions.Courses_View))
             return Forbid();
 
         var result = await _courseService.DeleteCourseAsync(id);

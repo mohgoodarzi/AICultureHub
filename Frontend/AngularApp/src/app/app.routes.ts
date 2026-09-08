@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { AuthGuard, AdminGuard } from './core/guards/auth.guard';
+import { AuthGuard, AdminGuard, PermissionGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
@@ -8,12 +8,14 @@ export const routes: Routes = [
   {
     path: 'dashboard',
     loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent),
-    canActivate: [AuthGuard]
+    canActivate: [AuthGuard, PermissionGuard],
+    data: { permission: 'Dashboard.View' },
   },
   {
     path: 'articles',
     loadComponent: () => import('./features/articles/article-list.component').then(m => m.ArticleListComponent),
-    canActivate: [AuthGuard]
+    canActivate: [AuthGuard, PermissionGuard],
+    data: { permission: 'Articles.View' },
   },
   {
     path: 'articles/:slug',
@@ -23,22 +25,25 @@ export const routes: Routes = [
   {
     path: 'courses',
     loadComponent: () => import('./features/courses/course-list.component').then(m => m.CourseListComponent),
-    canActivate: [AuthGuard]
+    canActivate: [AuthGuard, PermissionGuard],
+    data: { permission: 'Courses.View' },
   },
   {
     path: 'courses/watch/:id',
     loadComponent: () => import('./features/courses/course-video-watch.component').then(m => m.CourseVideoWatchComponent),
-    canActivate: [AuthGuard]
-  },  {
+    canActivate: [AuthGuard, PermissionGuard],
+    data: { permission: 'Courses.View' },
+  },
+  {
     path: 'courses/:slug',
     loadComponent: () => import('./features/courses/course-detail.component').then(m => m.CourseDetailComponent),
     canActivate: [AuthGuard]
   },
-
   {
     path: 'quizzes',
     loadComponent: () => import('./features/quizzes/quiz-list.component').then(m => m.QuizListComponent),
-    canActivate: [AuthGuard]
+    canActivate: [AuthGuard, PermissionGuard],
+    data: { permission: 'Courses.View' },
   },
   {
     path: 'quizzes/:id',
@@ -48,7 +53,8 @@ export const routes: Routes = [
   {
     path: 'leaderboard',
     loadComponent: () => import('./features/leaderboard/leaderboard.component').then(m => m.LeaderboardComponent),
-    canActivate: [AuthGuard]
+    canActivate: [AuthGuard, PermissionGuard],
+    data: { permission: 'Scoreboard.View' },
   },
   {
     path: 'admin',
@@ -58,7 +64,8 @@ export const routes: Routes = [
   {
     path: 'ai-policy',
     loadComponent: () => import('./features/ai-policy/ai-policy.component').then(m => m.AiPolicyComponent),
-    canActivate: [AuthGuard]
+    canActivate: [AuthGuard, PermissionGuard],
+    data: { permission: 'AiPolicy.View' },
   },
   { path: '**', redirectTo: '/dashboard' }
 ];

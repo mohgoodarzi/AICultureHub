@@ -1044,19 +1044,29 @@ export class CompactJoinPipe implements PipeTransform {
           <h3>دسترسی‌های نقش: {{ selectedRole?.name }}</h3>
           <button class="btn-close" (click)="closeRolePermissionsModal()">×</button>
         </div>
-        <div class="permissions-grid">
-          <div class="permission-module" *ngFor="let group of permissionGroups">
-            <h4>{{ group.moduleName }}</h4>
-            <div class="permission-types">
-              <label *ngFor="let perm of group.permissions">
-                <input type="checkbox"
-                  [checked]="selectedRolePermissions.includes(perm.id)"
-                  (change)="toggleRolePermission(perm.id, $event)">
-                <span class="perm-name">{{ perm.name }}</span>
-              </label>
-            </div>
-          </div>
-        </div>
+        <p class="policy-hint">برای هر بخش مشخص کنید که این نقش چه دسترسی‌هایی دارد. بخشی که تیک «مشاهده» ندارد، از منوی کناری کاربران این نقش مخفی می‌شود و دسترسی مستقیم با URL هم مسدود است.</p>
+        <table class="perm-matrix">
+          <thead>
+            <tr>
+              <th class="pm-section">بخش</th>
+              <th>مشاهده</th>
+              <th>ایجاد</th>
+              <th>ویرایش</th>
+              <th>حذف</th>
+              <th>مدیریت کامل</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of permissionMatrix" [class.pm-row-dim]="!row.actions.view">
+              <td class="pm-section">{{ row.moduleName }}<span class="pm-mod">{{ row.module }}</span></td>
+              <td class="pm-cell"><input type="checkbox" *ngIf="row.actions.view" [checked]="hasPerm(row.actions.view.id)" (change)="togglePerm(row.actions.view.id, $event)"><span class="pm-na" *ngIf="!row.actions.view">—</span></td>
+              <td class="pm-cell"><input type="checkbox" *ngIf="row.actions.create" [checked]="hasPerm(row.actions.create.id)" (change)="togglePerm(row.actions.create.id, $event)"><span class="pm-na" *ngIf="!row.actions.create">—</span></td>
+              <td class="pm-cell"><input type="checkbox" *ngIf="row.actions.edit" [checked]="hasPerm(row.actions.edit.id)" (change)="togglePerm(row.actions.edit.id, $event)"><span class="pm-na" *ngIf="!row.actions.edit">—</span></td>
+              <td class="pm-cell"><input type="checkbox" *ngIf="row.actions.delete" [checked]="hasPerm(row.actions.delete.id)" (change)="togglePerm(row.actions.delete.id, $event)"><span class="pm-na" *ngIf="!row.actions.delete">—</span></td>
+              <td class="pm-cell"><input type="checkbox" *ngIf="row.actions.manage" [checked]="hasPerm(row.actions.manage.id)" (change)="togglePerm(row.actions.manage.id, $event)"><span class="pm-na" *ngIf="!row.actions.manage">—</span></td>
+            </tr>
+          </tbody>
+        </table>
         <div class="form-actions">
           <button type="button" class="btn-cancel" (click)="closeRolePermissionsModal()">انصراف</button>
           <button type="button" class="btn-primary" (click)="saveRolePermissions()">ذخیره دسترسی‌ها</button>
@@ -1658,6 +1668,15 @@ export class CompactJoinPipe implements PipeTransform {
     }
     .policy-input:focus { outline: none; border-color: var(--theme-primary); }
     .policy-title-input { font-weight: 700; min-width: 140px; }
+
+    .perm-matrix { width: 100%; border-collapse: collapse; }
+    .perm-matrix th, .perm-matrix td { padding: 10px 12px; text-align: center; border-bottom: 1px solid var(--theme-border); font-size: 0.85rem; }
+    .perm-matrix th { background: var(--theme-surface-hover); font-weight: 800; color: var(--theme-text); }
+    .perm-matrix th.pm-section, .perm-matrix td.pm-section { text-align: right; font-weight: 700; color: var(--theme-text); }
+    .pm-mod { display: block; font-size: 0.68rem; color: var(--theme-text-muted); font-weight: 500; direction: ltr; text-align: right; }
+    .pm-cell input[type='checkbox'] { width: 17px; height: 17px; accent-color: var(--theme-primary); cursor: pointer; }
+    .pm-na { color: var(--theme-text-muted); opacity: 0.6; }
+    .pm-row-dim { opacity: 0.55; }
 
     .active-dot {
       display: inline-block;
@@ -3002,9 +3021,46 @@ export class AdminComponent implements OnInit {
     this.http.get<any[]>(`${this.apiUrl}/roles/permissions/grouped`).subscribe({
       next: (data) => {
         this.permissionGroups = data;
+        this.buildPermissionMatrix(data);
         this.showRolePermissionsModal = true;
       }
     });
+  }
+
+  // Build a section x action matrix (View/Create/Edit/Delete/Manage) from grouped permissions
+  permissionMatrix: any[] = [];
+
+  buildPermissionMatrix(groups: any[]): void {
+    const actionOf = (code: string): string => {
+      const c = (code || '').toLowerCase();
+      if (c.endsWith('.view')) return 'view';
+      if (c.endsWith('.create')) return 'create';
+      if (c.endsWith('.edit')) return 'edit';
+      if (c.endsWith('.delete')) return 'delete';
+      if (c.endsWith('.manage')) return 'manage';
+      return '';
+    };
+    this.permissionMatrix = (groups || []).map(g => {
+      const actions: any = {};
+      (g.permissions || []).forEach((p: any) => {
+        const action = actionOf(p.code);
+        if (action && !actions[action]) actions[action] = p;
+      });
+      return { module: g.module, moduleName: g.moduleName, actions };
+    });
+  }
+
+  hasPerm(permId: number | undefined): boolean {
+    return permId !== undefined && this.selectedRolePermissions.includes(permId);
+  }
+
+  togglePerm(permId: number | undefined, event: any): void {
+    if (permId === undefined) return;
+    if (event.target.checked) {
+      if (!this.selectedRolePermissions.includes(permId)) this.selectedRolePermissions.push(permId);
+    } else {
+      this.selectedRolePermissions = this.selectedRolePermissions.filter(id => id !== permId);
+    }
   }
 
   closeRolePermissionsModal(): void {

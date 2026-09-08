@@ -114,7 +114,7 @@ public class FeedbacksController : ControllerBase
 
     /// <summary>All feedback for the Admin Panel (admins and content managers).</summary>
     [HttpGet("admin/all")]
-    [RequirePermission(Permissions.Articles_Edit)]
+    [RequirePermission(Permissions.Management_View)]
     public async Task<IActionResult> GetAllForAdmin()
     {
         var list = await _context.Feedbacks

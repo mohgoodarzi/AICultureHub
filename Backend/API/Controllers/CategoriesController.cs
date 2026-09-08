@@ -11,7 +11,7 @@ namespace AICultureHub.API.Controllers;
 [Route("api/[controller]")]
 [Authorize]
 [RequireActiveUser]
-[RequireAdministrator]
+[RequirePermission(Permissions.Management_View)]
 public class CategoriesController : ControllerBase
 {
     private readonly ICategoryService _categoryService;
