@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { ShamsiDate } from '../../core/utils/shamsi-date';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CourseService } from '../../core/services/course.service';
 import { CourseDto } from '../../core/models/course.model';
 
@@ -68,6 +68,9 @@ import { CourseDto } from '../../core/models/course.model';
           <div class="video-frame">
             <video [src]="course.videoUrl" controls preload="metadata"></video>
           </div>
+          <button class="cm-watch-btn" (click)="openWatchPage()">
+            ▶ پخش در صفحه بزرگ
+          </button>
           <div class="cm-description" *ngIf="course.videoDescription">
             <h4>درباره این ویدیو</h4>
             <p>{{ course.videoDescription }}</p>
@@ -245,6 +248,22 @@ import { CourseDto } from '../../core/models/course.model';
       border: 1px solid var(--theme-border);
     }
     .cm-video video { width: 100%; max-height: 480px; display: block; }
+    .cm-watch-btn {
+      margin-top: 12px;
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--theme-primary), var(--theme-primary-dark));
+      color: #fff;
+      font-family: inherit;
+      font-weight: 800;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 6px 18px color-mix(in srgb, var(--theme-primary) 35%, transparent);
+    }
+    .cm-watch-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 24px color-mix(in srgb, var(--theme-primary) 45%, transparent); }
     .cm-description {
       margin-top: 16px;
       background: var(--theme-surface-hover);
@@ -396,7 +415,7 @@ export class CourseDetailComponent implements OnInit {
   get totalVotes(): number { return this.likeCount + this.dislikeCount; }
   get satisfactionPercentage(): number { return this.totalVotes > 0 ? Math.round((this.likeCount / this.totalVotes) * 100) : 0; }
 
-  constructor(private route: ActivatedRoute, private courseService: CourseService, private http: HttpClient) {}
+  constructor(private route: ActivatedRoute, private courseService: CourseService, private http: HttpClient, private router: Router) {}
 
   loadFeedbacks(courseId: number): void {
     this.http.get<any[]>(`${environment.apiUrl}/feedbacks/course/${courseId}`).subscribe({
@@ -438,6 +457,10 @@ export class CourseDetailComponent implements OnInit {
     this.courseService.getVoteStatus(courseId).subscribe({
       next: (result) => { this.likeCount = result.likeCount; this.dislikeCount = result.dislikeCount; this.userVote = result.userVote ?? null; }
     });
+  }
+
+  openWatchPage(): void {
+    if (this.course) this.router.navigate(['/courses/watch', this.course.id]);
   }
 
   vote(isLike: boolean): void {
