@@ -752,6 +752,15 @@ app.UseStaticFiles(new StaticFileOptions
     FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(Path.Combine(app.Environment.ContentRootPath, "wwwroot", "app")),
     RequestPath = ""
 });
-app.MapFallbackToFile("{*path:nonfile}", "/app/index.html");
+app.MapFallbackToFile("{*path:nonfile}", "/app/index.html", new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        // index.html must never be cached - it references hashed bundles that change on every build
+        ctx.Context.Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+        ctx.Context.Response.Headers["Pragma"] = "no-cache";
+        ctx.Context.Response.Headers["Expires"] = "0";
+    }
+});
 
 app.Run();
