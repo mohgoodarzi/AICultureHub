@@ -1053,20 +1053,12 @@ export class CompactJoinPipe implements PipeTransform {
             <tr>
               <th class="pm-section">بخش</th>
               <th>مشاهده</th>
-              <th>ایجاد</th>
-              <th>ویرایش</th>
-              <th>حذف</th>
-              <th>مدیریت کامل</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let row of permissionMatrix" [class.pm-row-dim]="!row.actions.view">
               <td class="pm-section">{{ row.moduleName }}<span class="pm-mod">{{ row.module }}</span></td>
               <td class="pm-cell"><input type="checkbox" *ngIf="row.actions.view" [checked]="hasPerm(row.actions.view.id)" (change)="togglePerm(row.actions.view.id, $event)"><span class="pm-na" *ngIf="!row.actions.view">—</span></td>
-              <td class="pm-cell"><input type="checkbox" *ngIf="row.actions.create" [checked]="hasPerm(row.actions.create.id)" (change)="togglePerm(row.actions.create.id, $event)"><span class="pm-na" *ngIf="!row.actions.create">—</span></td>
-              <td class="pm-cell"><input type="checkbox" *ngIf="row.actions.edit" [checked]="hasPerm(row.actions.edit.id)" (change)="togglePerm(row.actions.edit.id, $event)"><span class="pm-na" *ngIf="!row.actions.edit">—</span></td>
-              <td class="pm-cell"><input type="checkbox" *ngIf="row.actions.delete" [checked]="hasPerm(row.actions.delete.id)" (change)="togglePerm(row.actions.delete.id, $event)"><span class="pm-na" *ngIf="!row.actions.delete">—</span></td>
-              <td class="pm-cell"><input type="checkbox" *ngIf="row.actions.manage" [checked]="hasPerm(row.actions.manage.id)" (change)="togglePerm(row.actions.manage.id, $event)"><span class="pm-na" *ngIf="!row.actions.manage">—</span></td>
             </tr>
           </tbody>
         </table>
