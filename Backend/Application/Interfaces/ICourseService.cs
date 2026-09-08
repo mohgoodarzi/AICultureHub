@@ -28,6 +28,7 @@ public interface IQuizService
     Task<QuizAttemptResultDto?> SubmitQuizAsync(int quizId, SubmitQuizRequest request, int userId);
     Task<List<QuizAttemptResultDto>> GetUserQuizHistoryAsync(int userId, int count = 10);
     Task<bool> HasUserAttemptedAsync(int quizId, int userId);
+    Task<QuizAttemptReviewDto?> GetAttemptReviewAsync(int quizId, int userId);
 
     // Admin management
     Task<List<AdminQuizDto>> GetQuizzesForAdminAsync();

@@ -76,6 +76,17 @@ public class QuizzesController : ControllerBase
         return Ok(new { attempted });
     }
 
+    [Authorize]
+    [HttpGet("{id}/my-attempt")]
+    public async Task<IActionResult> GetMyAttempt(int id)
+    {
+        var userId = GetCurrentUserId();
+        if (userId == null) return Unauthorized();
+        var review = await _quizService.GetAttemptReviewAsync(id, userId.Value);
+        if (review == null) return NotFound();
+        return Ok(review);
+    }
+
     // ===== Admin quiz management =====
 
     [HttpGet("admin/all")]

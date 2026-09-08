@@ -286,3 +286,45 @@ public class CourseFeedbackStatsDto
     public int TotalVotes => LikeCount + DislikeCount;
     public int SatisfactionPercentage => TotalVotes > 0 ? (int)Math.Round((double)LikeCount / TotalVotes * 100) : 0;
 }
+// ===== Attempt review (saved answers after finalization) =====
+
+public class AttemptReviewDto
+{
+    public int AttemptId { get; set; }
+    public int Score { get; set; }
+    public int MaxScore { get; set; }
+    public decimal Percentage { get; set; }
+    public int CorrectAnswers { get; set; }
+    public int TotalQuestions { get; set; }
+    public bool IsPassed { get; set; }
+    public DateTime AttemptDate { get; set; }
+    public List<AnsweredQuestionDto> Questions { get; set; } = new();
+}
+
+public class QuizAttemptReviewDto
+{
+    public int AttemptId { get; set; }
+    public int Score { get; set; }
+    public int MaxScore { get; set; }
+    public decimal Percentage { get; set; }
+    public int CorrectAnswers { get; set; }
+    public int TotalQuestions { get; set; }
+    public bool IsPassed { get; set; }
+    public DateTime AttemptDate { get; set; }
+    public List<AnsweredQuestionDto> Questions { get; set; } = new();
+}
+public class AnsweredQuestionDto
+{
+    public int QuestionId { get; set; }
+    public string QuestionText { get; set; } = string.Empty;
+    public List<AnsweredOptionDto> Answers { get; set; } = new();
+    public int? SelectedAnswerId { get; set; }
+    public bool IsCorrect { get; set; }
+}
+
+public class AnsweredOptionDto
+{
+    public int Id { get; set; }
+    public string AnswerText { get; set; } = string.Empty;
+    public bool IsCorrect { get; set; }
+}

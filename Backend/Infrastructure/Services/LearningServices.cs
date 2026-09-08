@@ -309,6 +309,51 @@ public class QuizService : IQuizService
             .ToListAsync();
                 }
 
+    public async Task<QuizAttemptReviewDto?> GetAttemptReviewAsync(int quizId, int userId)
+    {
+        var attempt = await _context.QuizAttempts
+            .Include(a => a.AttemptAnswers)
+            .FirstOrDefaultAsync(a => a.QuizId == quizId && a.UserId == userId);
+        if (attempt == null) return null;
+
+        var quiz = await _context.Quizzes
+            .Include(q => q.Questions.Where(qn => qn.IsActive))
+            .ThenInclude(qn => qn.Answers)
+            .FirstOrDefaultAsync(q => q.Id == quizId);
+        if (quiz == null) return null;
+
+        var review = new QuizAttemptReviewDto
+        {
+            AttemptId = attempt.Id,
+            Score = attempt.Score,
+            MaxScore = attempt.MaxScore,
+            Percentage = attempt.Percentage,
+            CorrectAnswers = attempt.CorrectAnswers,
+            TotalQuestions = attempt.TotalQuestions,
+            IsPassed = attempt.IsPassed,
+            AttemptDate = attempt.AttemptDate
+        };
+
+        foreach (var q in quiz.Questions.OrderBy(qn => qn.OrderIndex))
+        {
+            var saved = attempt.AttemptAnswers.FirstOrDefault(aa => aa.QuestionId == q.Id);
+            review.Questions.Add(new AnsweredQuestionDto
+            {
+                QuestionId = q.Id,
+                QuestionText = q.QuestionText,
+                SelectedAnswerId = saved?.SelectedAnswerId,
+                IsCorrect = saved?.IsCorrect ?? false,
+                Answers = q.Answers.OrderBy(a => a.OrderIndex).Select(a => new AnsweredOptionDto
+                {
+                    Id = a.Id,
+                    AnswerText = a.AnswerText,
+                    IsCorrect = a.IsCorrect
+                }).ToList()
+            });
+        }
+
+        return review;
+    }
     public async Task<bool> HasUserAttemptedAsync(int quizId, int userId)
     {
         return await _context.QuizAttempts.AnyAsync(qa => qa.QuizId == quizId && qa.UserId == userId);

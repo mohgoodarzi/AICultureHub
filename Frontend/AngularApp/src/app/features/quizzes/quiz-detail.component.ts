@@ -43,7 +43,10 @@ import { QuizDto, QuizAttemptResultDto, SubmitQuizRequest, QuestionDto } from '.
       </button>
 
       <div class="locked-banner" *ngIf="attemptLocked && !result">
-        🔒 این آزمون قبلاً نهایی و ثبت شده است. پاسخ‌ها قفل شده و امکان تغییر یا ارسال مجدد وجود ندارد.
+        🔒 این آزمون قبلاً نهایی و ثبت شده است. پاسخ‌های انتخابی شما از پایگاه داده بارگذاری شده‌اند و قفل هستند.
+        <div class="locked-score" *ngIf="savedResult">
+          نتیجه ثبت‌شده: {{ savedResult.score }} از {{ savedResult.maxScore }} نمره — {{ savedResult.percentage | number:'1.0-0' }}٪
+        </div>
       </div>
     </div>
 
@@ -277,6 +280,11 @@ import { QuizDto, QuizAttemptResultDto, SubmitQuizRequest, QuestionDto } from '.
     .btn-confirm-no { background: var(--theme-surface-hover); color: var(--theme-text-secondary); border: 1.5px solid var(--theme-border) !important; }
     .btn-confirm-no:hover { border-color: var(--theme-text-muted) !important; }
 
+    .locked-score {
+      margin-top: 10px;
+      font-size: 0.95rem;
+      font-weight: 800;
+    }
     .locked-banner {
       margin-top: 16px;
       background: rgba(239, 68, 68, 0.08);
@@ -365,6 +373,7 @@ export class QuizDetailComponent implements OnInit {
   startTime = 0;
   showConfirmDialog = false;
   attemptLocked = false;
+  savedResult: any = null;
 
   constructor(private route: ActivatedRoute, private quizService: QuizService) {}
 
@@ -376,13 +385,34 @@ export class QuizDetailComponent implements OnInit {
         next: (data) => {
           this.quiz = data;
           this.startTime = Date.now();
-          // If this exam was already finalized, open it in locked (read-only) mode
+          // If this exam was already finalized, load the SAVED answers from the database
+          // and open it in locked (read-only) mode showing the user's previous selections.
           this.quizService.getAttemptStatus(quizId).subscribe({
-            next: (status) => { this.attemptLocked = status.attempted; }
+            next: (status) => {
+              this.attemptLocked = status.attempted;
+              if (status.attempted) {
+                this.loadSavedAnswers(quizId);
+              }
+            }
           });
         }
       });
     }
+  }
+
+  loadSavedAnswers(quizId: number): void {
+    this.quizService.getMyAttempt(quizId).subscribe({
+      next: (attempt) => {
+        // Restore previously selected answers from the database
+        (attempt.questions || []).forEach((q: any) => {
+          if (q.selectedAnswerId) {
+            this.selectedAnswers[q.questionId] = q.selectedAnswerId;
+          }
+        });
+        this.savedResult = attempt;
+      },
+      error: () => {}
+    });
   }
 
   requestFinalize(): void {
