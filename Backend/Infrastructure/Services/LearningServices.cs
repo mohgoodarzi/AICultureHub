@@ -53,7 +53,7 @@ public class CourseService : ICourseService
 
     public async Task<CourseDto?> GetCourseBySlugAsync(string slug, int? userId = null)
     {
-        var course = await _context.Courses.Include(c => c.Category).Include(c => c.Lessons).ThenInclude(l => l)
+        var course = await _context.Courses.Include(c => c.Category).Include(c => c.Lessons)
             .FirstOrDefaultAsync(c => c.Slug == slug && c.IsActive && c.IsPublished);
         if (course == null) return null;
         return await MapToCourseDto(course, userId);

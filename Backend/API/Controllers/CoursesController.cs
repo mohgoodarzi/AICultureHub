@@ -25,8 +25,9 @@ public class CoursesController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetCourses([FromQuery] PagedRequest request)
     {
-        var isAuthenticated = User.Identity?.IsAuthenticated ?? false;
-        var result = await _courseService.GetCoursesAsync(request, includeUnpublished: isAuthenticated);
+        // Drafts (unpublished courses) are visible only to Management, not regular users
+        var includeDrafts = await HasPermissionAsync(Permissions.Management_View);
+        var result = await _courseService.GetCoursesAsync(request, includeUnpublished: includeDrafts);
         return Ok(result);
     }
 
