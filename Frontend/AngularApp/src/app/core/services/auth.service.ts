@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { LoginRequest, LoginResponse, RegisterRequest, UserDto } from '../models/auth.model';
@@ -50,9 +51,19 @@ export class AuthService {
           // currently active notification can be shown for this login.
           sessionStorage.removeItem('notificationShown');
           this.userSubject.next(response.user);
-          this.loadPermissions(response.user.id);
-          observer.next(response);
-          observer.complete();
+          // Load permissions BEFORE completing the login observable, so route
+          // guards see them on the first post-login navigation (prevents the
+          // redirect loop / stuck loading screen).
+          this.loadPermissions(response.user.id).subscribe({
+            next: () => {
+              observer.next(response);
+              observer.complete();
+            },
+            error: () => {
+              observer.next(response);
+              observer.complete();
+            }
+          });
         },
         error: (err) => {
           observer.error(err);
@@ -108,12 +119,13 @@ export class AuthService {
     return localStorage.getItem('token');
   }
 
-  loadPermissions(userId: number): void {
-    this.http.get<UserPermissions>(`${environment.apiUrl}/roles/user/${userId}/permissions`).subscribe({
-      next: (perms) => {
+  loadPermissions(userId: number): Observable<UserPermissions> {
+    return this.http.get<UserPermissions>(`${environment.apiUrl}/roles/user/${userId}/permissions`).pipe(
+      map((perms) => {
         this.permissionsSubject.next(perms);
-      }
-    });
+        return perms;
+      })
+    );
   }
 
   hasPermission(permission: string): boolean {
