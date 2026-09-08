@@ -1,12 +1,103 @@
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
+using System.Text.Encodings.Web;
+using System.Text.Json.Serialization;
+using AICultureHub.Domain.Entities;
 using AICultureHub.Domain.Entities;
 
 namespace AICultureHub.Infrastructure.Data;
 
 public class ApplicationDbContext : DbContext
 {
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string?> HostCache = new();
+
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
     {
+    }
+
+    /// <summary>
+    /// Centralized audit: every Create/Update/Delete made through this DbContext is
+    /// automatically written to the AuditLogs table with user, computer name, timestamps
+    /// and serialized old/new values (sensitive fields masked).
+    /// </summary>
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        PrepareAuditLogs();
+        return base.SaveChangesAsync(cancellationToken);
+    }
+
+    public override int SaveChanges()
+    {
+        PrepareAuditLogs();
+        return base.SaveChanges();
+    }
+
+    private void PrepareAuditLogs()
+    {
+        if (!AICultureHub.Infrastructure.Services.AuditContext.Enabled) return;
+
+        var sensitive = new[] { "PasswordHash", "PasswordSalt" };
+
+        foreach (var entry in ChangeTracker.Entries()
+                     .Where(e => e.Entity is not AuditLog &&
+                                 e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted))
+        {
+            try
+            {
+                var entityName = entry.Entity.GetType().Name;
+                var state = entry.State switch
+                {
+                    EntityState.Added => "Create",
+                    EntityState.Modified => "Update",
+                    EntityState.Deleted => "Delete",
+                    _ => ""
+                };
+
+                var oldValues = new Dictionary<string, object?>();
+                var newValues = new Dictionary<string, object?>();
+
+                foreach (var prop in entry.Properties)
+                {
+                    if (prop.Metadata.Name == "Id") continue;
+                    if (sensitive.Contains(prop.Metadata.Name, StringComparer.OrdinalIgnoreCase))
+                    {
+                        newValues[prop.Metadata.Name] = "***";
+                        continue;
+                    }
+                    if (entry.State == EntityState.Modified || entry.State == EntityState.Deleted)
+                    {
+                        if (!prop.Metadata.IsPrimaryKey()) oldValues[prop.Metadata.Name] = prop.OriginalValue;
+                    }
+                    if (entry.State == EntityState.Added || entry.State == EntityState.Modified)
+                    {
+                        newValues[prop.Metadata.Name] = prop.CurrentValue;
+                    }
+                }
+
+                int? entityId = null;
+                var idProp = entry.Properties.FirstOrDefault(p => p.Metadata.IsPrimaryKey());
+                if (idProp?.CurrentValue is int iv) entityId = iv;
+
+                var options = new JsonSerializerOptions
+                {
+                    ReferenceHandler = ReferenceHandler.IgnoreCycles,
+                    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                    WriteIndented = false
+                };
+
+                var audit = AICultureHub.Infrastructure.Services.AuditContext.CreateLog(
+                    state, entityName, entityId,
+                    null,
+                    oldValues.Count > 0 ? JsonSerializer.Serialize(oldValues, options) : null,
+                    newValues.Count > 0 ? JsonSerializer.Serialize(newValues, options) : null);
+
+                AuditLogs.Add(audit);
+            }
+            catch
+            {
+                // Auditing must never break a business operation
+            }
+        }
     }
 
     public DbSet<User> Users => Set<User>();

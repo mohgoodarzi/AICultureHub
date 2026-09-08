@@ -10,6 +10,7 @@ using AICultureHub.Application.Interfaces;
 using AICultureHub.Domain.Entities;
 using AICultureHub.Infrastructure.Services;
 using AICultureHub.Infrastructure.Data;
+using AICultureHub.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -743,6 +744,27 @@ app.UseStaticFiles(new StaticFileOptions
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Capture audit context (who, from which computer) for every authenticated request
+app.Use(async (context, next) =>
+{
+    try
+    {
+        if (context.User.Identity?.IsAuthenticated == true)
+        {
+            var userIdClaim = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var username = context.User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
+            var ip = context.Connection.RemoteIpAddress?.ToString();
+            var host = AuditContext.ResolveHost(ip);
+            AuditContext.Set(
+                int.TryParse(userIdClaim, out var uid) ? uid : null, username, host, ip);
+        }
+    }
+    catch { /* audit context capture must never break the request */ }
+
+    try { await next(); }
+    finally { AuditContext.Clear(); }
+});
 
 app.MapControllers();
 

@@ -49,6 +49,7 @@ export class CompactJoinPipe implements PipeTransform {
         <button [class.active]="activeTab === 'roles'" (click)="activeTab = 'roles'; loadRoles()"><span class="tab-ico">🔑</span>نقش‌ها</button>
         <button [class.active]="activeTab === 'announcements'" (click)="activeTab = 'announcements'"><span class="tab-ico">📣</span>اطلاعیه‌ها</button>
         <button [class.active]="activeTab === 'aipolicy'" (click)="activeTab = 'aipolicy'; loadAiPolicy()"><span class="tab-ico">📜</span>خط‌مشی AI</button>
+        <button [class.active]="activeTab === 'audit'" (click)="activeTab = 'audit'; loadAuditLogs()"><span class="tab-ico">🧾</span>گزارش تغییرات</button>
         <button [class.active]="activeTab === 'settings'" (click)="activeTab = 'settings'; loadUploadLimits()"><span class="tab-ico">⚙️</span>تنظیمات</button>
       </div>
 
@@ -729,6 +730,64 @@ export class CompactJoinPipe implements PipeTransform {
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- Audit Log Section -->
+      <div class="crud-section" *ngIf="activeTab === 'audit'">
+        <div class="crud-header">
+          <h3>🧾 گزارش تغییرات سیستم (Audit Log)</h3>
+          <button class="btn-primary" (click)="loadAuditLogs()">🔄 بروزرسانی</button>
+        </div>
+        <div class="form-row" style="margin-bottom: 14px;">
+          <div class="form-group">
+            <label>عملیات</label>
+            <input type="text" [(ngModel)]="auditFilters.action" (ngModelChange)="loadAuditLogs()" placeholder="Create / Update / Delete...">
+          </div>
+          <div class="form-group">
+            <label>نوع موجودیت</label>
+            <input type="text" [(ngModel)]="auditFilters.entityType" (ngModelChange)="loadAuditLogs()" placeholder="User / Course / Quiz...">
+          </div>
+          <div class="form-group">
+            <label>نام کاربری</label>
+            <input type="text" [(ngModel)]="auditFilters.username" (ngModelChange)="loadAuditLogs()" placeholder="username...">
+          </div>
+        </div>
+        <table class="crud-table">
+          <thead>
+            <tr>
+              <th>کاربر</th>
+              <th>عملیات</th>
+              <th>موجودیت</th>
+              <th>شناسه</th>
+              <th>رایانه</th>
+              <th>تاریخ و ساعت</th>
+              <th>مقادیر قدیمی / جدید</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let log of auditLogs">
+              <td>{{ log.username || '-' }}</td>
+              <td><span class="status-badge" [class.published]="log.action === 'Create'">{{ log.action }}</span></td>
+              <td>{{ log.entityType || '-' }}</td>
+              <td>{{ log.entityId || '-' }}</td>
+              <td>{{ log.userAgent || '-' }}</td>
+              <td>{{ formatDate(log.timestamp) }}</td>
+              <td style="max-width: 320px;">
+                <details *ngIf="log.oldValues || log.newValues">
+                  <summary style="cursor:pointer;color:var(--theme-primary);">مشاهده مقادیر</summary>
+                  <div style="text-align:left; direction:ltr; font-size:0.72rem; white-space:pre-wrap; word-break:break-all; background:var(--theme-surface-hover); padding:8px; border-radius:8px; margin-top:6px;">
+                    <div *ngIf="log.oldValues"><strong style="color:#c0392b;">OLD:</strong> {{ log.oldValues }}</div>
+                    <div *ngIf="log.newValues"><strong style="color:#0f8a5f;">NEW:</strong> {{ log.newValues }}</div>
+                  </div>
+                </details>
+                <span *ngIf="!log.oldValues && !log.newValues">-</span>
+              </td>
+            </tr>
+            <tr *ngIf="auditLogs.length === 0">
+              <td colspan="7" style="text-align:center;color:var(--theme-text-muted)">گزارشی ثبت نشده است</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       <!-- AI Policy Section -->
@@ -2044,6 +2103,11 @@ export class AdminComponent implements OnInit {
     return { title: '', description: '', categoryId: null, difficulty: 'Beginner', timeLimit: 30, passingScore: 70, points: 50, isPublished: false, questions: [] };
   }
 
+  auditLogs: any[] = [];
+  auditFilters: any = { action: '', entityType: '', username: '' };
+  auditTotal = 0;
+  auditPage = 1;
+  uploadingLimits: any;
   uploadLimits: any = { maxImageSizeMB: 10, maxVideoSizeMB: 50 };
   uploadSettingsSaving = false;
   uploadingAvatar = false;
@@ -2058,6 +2122,17 @@ export class AdminComponent implements OnInit {
     this.loadAnnouncements();
     this.loadCategories();
     this.loadUploadLimits();
+  }
+
+  loadAuditLogs(): void {
+    let url = "${this.apiUrl}/admin/audit-logs?pageNumber=${this.auditPage}&pageSize=50";
+    if (this.auditFilters.action) url += "&action=" + encodeURIComponent(this.auditFilters.action);
+    if (this.auditFilters.entityType) url += "&entityType=" + encodeURIComponent(this.auditFilters.entityType);
+    if (this.auditFilters.username) url += "&username=" + encodeURIComponent(this.auditFilters.username);
+    this.http.get<any>(url).subscribe({
+      next:(result) => { this.auditLogs = result.items || []; this.auditTotal = result.totalCount || 0; },
+      error: (err) => console.error('Failed to load audit logs:', err)
+    });
   }
 
   loadUploadLimits(): void {

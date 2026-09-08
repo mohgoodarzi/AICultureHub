@@ -6,6 +6,7 @@ using AICultureHub.Application.DTOs;
 using AICultureHub.Application.Interfaces;
 using AICultureHub.API.Attributes;
 using AICultureHub.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace AICultureHub.API.Controllers;
 
@@ -131,6 +132,27 @@ public class AdminController : ControllerBase
         {
             return BadRequest(new { message = ex.Message });
         }
+    }
+
+    [HttpGet("audit-logs")]
+    public async Task<IActionResult> GetAuditLogs(
+        [FromServices] ApplicationDbContext dbContext,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 50,
+        [FromQuery] string? action = null,
+        [FromQuery] string? entityType = null,
+        [FromQuery] string? username = null)
+    {
+        var query = dbContext.AuditLogs.AsQueryable();
+        if (!string.IsNullOrWhiteSpace(action)) query = query.Where(l => l.Action.Contains(action));
+        if (!string.IsNullOrWhiteSpace(entityType)) query = query.Where(l => l.EntityType != null && l.EntityType.Contains(entityType));
+        if (!string.IsNullOrWhiteSpace(username)) query = query.Where(l => l.Username != null && l.Username.Contains(username));
+        var totalCount = await query.CountAsync();
+        var items = await query.OrderByDescending(l => l.Timestamp)
+            .Skip((pageNumber - 1) * pageSize).Take(pageSize)
+            .Select(l => new { l.Id, l.Username, l.Action, l.EntityType, l.EntityId, l.Description, l.OldValues, l.NewValues, l.IpAddress, l.UserAgent, l.Timestamp, l.IsSuccess })
+            .ToListAsync();
+        return Ok(new { items, totalCount, pageNumber, pageSize });
     }
 
     [HttpGet("analytics")]
