@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { LoginRequest, LoginResponse, RegisterRequest, UserDto } from '../models/auth.model';
@@ -33,7 +34,7 @@ export class AuthService {
       try {
         const user = JSON.parse(userJson);
         this.userSubject.next(user);
-        this.loadPermissions(user.id);
+        this.loadPermissions(user.id).subscribe();
       } catch {
         this.logout();
       }
@@ -125,6 +126,17 @@ export class AuthService {
         this.permissionsSubject.next(perms);
         return perms;
       })
+    );
+  }
+
+  // Waits for permissions to be loaded (used by guards on refresh where they aren't yet)
+  ensurePermissions(): Observable<boolean> {
+    const user = this.userSubject.value;
+    if (this.permissionsSubject.value) return of(true);
+    if (!user) return of(false);
+    return this.loadPermissions(user.id).pipe(
+      map(() => true),
+      catchError(() => of(false))
     );
   }
 

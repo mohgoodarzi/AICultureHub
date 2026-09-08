@@ -97,7 +97,7 @@ import { ShamsiDate } from '../../core/utils/shamsi-date';
             <div class="side-row" *ngIf="course.points"><span>امتیاز دوره:</span><strong>{{ course.points }}</strong></div>
           </div>
 
-          <a [routerLink]="['/courses', course.slug]" class="side-cta">مشاهده صفحه اصلی دوره ←</a>
+          <a routerLink="/courses" class="side-cta">بازگشت به صفحه دوره‌ها ←</a>
         </aside>
       </div>
 
