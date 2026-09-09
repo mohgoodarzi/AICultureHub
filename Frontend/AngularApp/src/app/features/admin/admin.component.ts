@@ -736,7 +736,6 @@ export class CompactJoinPipe implements PipeTransform {
       <div class="crud-section" *ngIf="activeTab === 'audit'">
         <div class="crud-header">
           <h3>🧾 گزارش تغییرات سیستم (Audit Log)</h3>
-          <button class="btn-primary" (click)="loadAuditLogs()">🔄 بروزرسانی</button>
         </div>
         <div class="form-row" style="margin-bottom: 14px;">
           <div class="form-group">

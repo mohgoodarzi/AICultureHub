@@ -38,13 +38,16 @@ public class ApplicationDbContext : DbContext
 
         var sensitive = new[] { "PasswordHash", "PasswordSalt" };
 
-        foreach (var entry in ChangeTracker.Entries()
-                     .Where(e => e.Entity is not AuditLog &&
-                                 e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted))
+        var trackedEntries = ChangeTracker.Entries()
+            .Where(e => e.Entity is not AuditLog &&
+                        e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted)
+            .ToList();
+
+        foreach (var entry in trackedEntries)
         {
+            var entityName = entry.Entity.GetType().Name;
             try
             {
-                var entityName = entry.Entity.GetType().Name;
                 var state = entry.State switch
                 {
                     EntityState.Added => "Create",
